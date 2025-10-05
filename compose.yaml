@@ -1,0 +1,36 @@
+services:
+  api:
+    build: ./backends/api
+    restart: unless-stopped
+    command: deno task dev
+    ports:
+      - ${API_PORT}:${API_PORT}
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ${ENV_FILE}
+    develop:
+      watch:
+        - path: "./backends/api/"
+          action: sync
+          target: "/app"
+
+  db:
+    image: postgres:${POSTGRES_VERSION}-alpine
+    restart: unless-stopped
+    ports: 
+      - ${DB_PORT}:${DB_PORT}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - ${ENV_FILE}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d ${DB_NAME} -U ${DB_USER}"]
+      interval: 30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  postgres_data:
