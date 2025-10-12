@@ -1,0 +1,14 @@
+services:
+  api:
+    build:
+      context: ./backends/api
+      target: base
+    command: npm run start:dev
+    volumes:
+      - ./backends/api/src:/app/src
+    ports:
+      - ${API_PORT}:${API_PORT}
+
+  db:
+    ports:
+      - ${DB_PORT}:${DB_PORT}

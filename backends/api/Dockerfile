@@ -1,9 +1,15 @@
-FROM denoland/deno:2.5.3
-
+FROM node:22.20.0-alpine3.21 AS base
 WORKDIR /app
-
+COPY package*.json .
+RUN npm ci
 COPY . .
 
-RUN deno i
+FROM base AS builder
+RUN npm run build
 
-CMD ["deno", "run", "--allow-net", "--allow-env", "app.js"]
+FROM node:22.20.0-alpine3.21 AS runtime
+WORKDIR /app
+COPY package*.json .
+COPY --from=builder /app/dist .
+RUN npm ci --omit=dev
+CMD ["npm", "run", "start:prod"]

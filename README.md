@@ -1,10 +1,6 @@
 # Logbook alternative for sailors and boaters
 
-It is recommended to use [Docker](https://www.docker.com/) to run this project.
-
-##### For Windows users:
-
-It is recommended to run the project using the bash emulator provided by [Git for Windows](https://gitforwindows.org/) instead of WSL for watchmode compatability.
+[Docker](https://www.docker.com/) is required to run this project.
 
 #### Setting up the development environment
 
@@ -17,11 +13,11 @@ git clone https://github.com/sologit-solutions/mobile-log-book.git
 ##### 2. Load environment variables
 
 ```
-source main.env
+source load.env
 ```
 
 ##### 3. Build the project
 
 ```
-docker compose up -w 
+run-dev
 ```
