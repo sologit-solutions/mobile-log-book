@@ -32,7 +32,7 @@ cp dev.env example.dev.env
 cp load.env example.load.env
 ```
 
-##### 3. Load environment variables
+##### 4. Load environment variables
 
 Load environment variables into your current shell.
 
@@ -40,7 +40,7 @@ Load environment variables into your current shell.
 source example.load.env
 ```
 
-##### 4. Build and run the development environment
+##### 5. Build and run the development environment
 
 ```
 run-dev
