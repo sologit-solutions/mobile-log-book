@@ -1,0 +1,7 @@
+# generated files
+node_modules/
+dist/
+
+# config files
+*.json
+eslint.config.ts
