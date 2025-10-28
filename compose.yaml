@@ -1,6 +1,9 @@
 services:
   api:
-    build: ./backends/api
+    build: 
+      context: ./backends/api
+      args:
+        DATABASE_URL: ${DATABASE_URL}
     restart: unless-stopped
     depends_on:
       db:
@@ -16,7 +19,7 @@ services:
     env_file:
       - ${ENV_FILE}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -d ${DB_NAME} -U ${DB_USER}"]
+      test: ["CMD-SHELL", "pg_isready -d ${POSTGRES_DB} -U ${POSTGRES_USER}"]
       interval: 30s
       timeout: 30s
       retries: 5
