@@ -14,3 +14,7 @@ services:
     ports:
       - ${POSTGRES_PORT}:${POSTGRES_PORT}
   
+  mobile:
+    build: ./mobile
+    ports: 
+      - 8081:8081
