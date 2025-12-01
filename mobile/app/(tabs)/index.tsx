@@ -1,18 +1,37 @@
 import { useOwnTheme } from "@/context/themeContext";
 import React, { useMemo } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {getCurrentLocation} from "@/utils/location";
 
 export default function AddActivity() {
   const { theme } = useOwnTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
-  // Individual button handlers — add logic later
-  const handleAdd1 = () => console.log("Add 1 pressed");
-  const handleAdd2 = () => console.log("Add 2 pressed");
-  const handleAdd3 = () => console.log("Add 3 pressed");
-  const handleAdd4 = () => console.log("Add 4 pressed");
-  const handleAdd5 = () => console.log("Add 5 pressed");
-  const handleAdd6 = () => console.log("Add 6 pressed");
+  const handleLocation = async (buttonLabel: string) => {
+      console.log(`Fetching location for ${buttonLabel}...`);
+
+      try {
+          const location = await getCurrentLocation();
+
+          console.log(`DATA RECEIVED [${buttonLabel}]:`);
+          console.log("------------------------------------------------");
+          console.log("Latitude: ", location.coords.latitude);
+          console.log("Longitude:", location.coords.longitude);
+          console.log("Normalized timestamp:", new Date(location.timestamp).toLocaleString());
+          console.log("Timestamp:", new Date(location.timestamp));
+          console.log("------------------------------------------------");
+      } catch (error) {
+          console.error(error);
+      }
+  }
+
+  // Individual button handlers
+    const handleAdd1 = () => handleLocation("Hoist sails");
+    const handleAdd2 = () => handleLocation("Lower sails");
+    const handleAdd3 = () => handleLocation("Hoist anchor");
+    const handleAdd4 = () => handleLocation("Lower anchor");
+    const handleAdd5 = () => handleLocation("Engine on");
+    const handleAdd6 = () => handleLocation("Engine off");
 
   return (
     <View style={styles.container}>
@@ -21,18 +40,18 @@ export default function AddActivity() {
       {/* 2x3 Grid of buttons */}
       <View style={styles.gridContainer}>
         <View style={styles.row}>
-          <ActivityButton label="Add 1" onPress={handleAdd1} theme={theme} />
-          <ActivityButton label="Add 2" onPress={handleAdd2} theme={theme} />
+          <ActivityButton label="Hoist sails" onPress={handleAdd1} theme={theme} />
+          <ActivityButton label="Lower sails" onPress={handleAdd2} theme={theme} />
         </View>
 
         <View style={styles.row}>
-          <ActivityButton label="Add 3" onPress={handleAdd3} theme={theme} />
-          <ActivityButton label="Add 4" onPress={handleAdd4} theme={theme} />
+          <ActivityButton label="Hoist anchor" onPress={handleAdd3} theme={theme} />
+          <ActivityButton label="Lower anchor" onPress={handleAdd4} theme={theme} />
         </View>
 
         <View style={styles.row}>
-          <ActivityButton label="Add 5" onPress={handleAdd5} theme={theme} />
-          <ActivityButton label="Add 6" onPress={handleAdd6} theme={theme} />
+          <ActivityButton label="Engine on" onPress={handleAdd5} theme={theme} />
+          <ActivityButton label="Engine off" onPress={handleAdd6} theme={theme} />
         </View>
       </View>
     </View>
