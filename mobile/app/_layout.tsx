@@ -15,11 +15,14 @@
  * - Application state persistence
  * - Status bar styling that matches the theme
  */
-import { ThemeProvider, useOwnTheme } from "@/context/themeContext";
-import { AppStateProvider } from "@/state/appState";
-import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import {ThemeProvider, useOwnTheme} from "@/context/themeContext";
+import {AppStateProvider} from "@/state/appState";
+import {Stack} from "expo-router";
+import {StatusBar} from "expo-status-bar";
+import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context";
+
+import {SQLiteProvider} from "expo-sqlite";
+import {migrateDbIfNeeded} from "@/database/db";
 
 /**
  * Main layout content component that renders the application structure
@@ -40,42 +43,42 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
  * @see AppStateProvider
  */
 function RootLayoutContent() {
-  /**
-   * Hook to access current theme values
-   *
-   * This hook retrieves the current theme object from ThemeProvider
-   * which includes colors, spacing, typography, and other styling values
-   *
-   * @type {Object}
-   * @property {Object} theme - Current theme configuration
-   * @property {Object} theme.colors - Theme color palette
-   * @property {Object} theme.spacing - Spacing scale
-   * @property {Object} theme.typography - Typography styles
-   */
-  const { theme } = useOwnTheme();
+    /**
+     * Hook to access current theme values
+     *
+     * This hook retrieves the current theme object from ThemeProvider
+     * which includes colors, spacing, typography, and other styling values
+     *
+     * @type {Object}
+     * @property {Object} theme - Current theme configuration
+     * @property {Object} theme.colors - Theme color palette
+     * @property {Object} theme.spacing - Spacing scale
+     * @property {Object} theme.typography - Typography styles
+     */
+    const {theme} = useOwnTheme();
 
-  return (
-    <SafeAreaProvider>
-      <SafeAreaView
-        style={{ flex: 1, backgroundColor: theme.colors.background }}
-      >
-        <StatusBar
-          //style="light"
-          backgroundColor={theme.colors.statusBar}
-          translucent
-        />
+    return (
+        <SafeAreaProvider>
+            <SafeAreaView
+                style={{flex: 1, backgroundColor: theme.colors.background}}
+            >
+                <StatusBar
+                    //style="light"
+                    backgroundColor={theme.colors.statusBar}
+                    translucent
+                />
 
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: {
-              backgroundColor: theme.colors.background,
-            },
-          }}
-        />
-      </SafeAreaView>
-    </SafeAreaProvider>
-  );
+                <Stack
+                    screenOptions={{
+                        headerShown: false,
+                        contentStyle: {
+                            backgroundColor: theme.colors.background,
+                        },
+                    }}
+                />
+            </SafeAreaView>
+        </SafeAreaProvider>
+    );
 }
 
 /**
@@ -97,11 +100,13 @@ function RootLayoutContent() {
  * @see RootLayoutContent
  */
 export default function RootLayout() {
-  return (
-    <AppStateProvider>
-      <ThemeProvider>
-        <RootLayoutContent />
-      </ThemeProvider>
-    </AppStateProvider>
-  );
+    return (
+        <AppStateProvider>
+            <ThemeProvider>
+                <SQLiteProvider databaseName={"logs.db"} onInit={migrateDbIfNeeded}>
+                    <RootLayoutContent/>
+                </SQLiteProvider>
+            </ThemeProvider>
+        </AppStateProvider>
+    );
 }
