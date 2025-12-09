@@ -5,6 +5,7 @@ const process_env = {
   DEVELOP: process.env.DEVELOP,
   DEBUG: process.env.DEBUG,
   API_PORT: process.env.API_PORT,
+  JWT_SECRET: process.env.JWT_SECRET,
 };
 
 const envSchema = z.object({
@@ -12,6 +13,7 @@ const envSchema = z.object({
   DEVELOP: z.stringbool().default(true),
   DEBUG: z.stringbool().default(true),
   API_PORT: z.coerce.number().min(0).max(65535).default(8000),
+  JWT_SECRET: z.coerce.string().default("secret"),
 });
 
 const envKey = envSchema.keyof();
@@ -31,6 +33,18 @@ if (ENV.DEBUG) {
       }`,
     );
   });
+}
+
+if (ENV.JWT_SECRET === "secret") {
+  console.log("WARNING: USING DEFAULT JWT_SECRET!!!");
+}
+
+if (ENV.DEVELOP) {
+  console.log("WARNING: Starting server in development mode!");
+}
+
+if (ENV.DEBUG) {
+  console.log("WARNING: Starting in debug mode!");
 }
 
 export { ENV };

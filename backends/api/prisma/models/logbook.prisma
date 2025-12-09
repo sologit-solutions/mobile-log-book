@@ -11,8 +11,15 @@ model Logitem {
   id Int @id @default(autoincrement())
   logbook Logbook @relation(fields: [logbookId], references: [id])
   logbookId Int
-  title String? @db.VarChar(64)
-  body String?
-  location String?
+  title String @db.VarChar(64)
+  body String? @db.VarChar(1024)
+  crew Int?
+  latitude Float?
+  longitude Float?
+  course Float?
+  speedOverGround Float?
+  speedThroughWater Float?
+  windSpeed Float?
+  barometer Float?
   createdAt DateTime @default(now())
 }
