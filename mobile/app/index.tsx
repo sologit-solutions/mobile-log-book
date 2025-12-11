@@ -96,7 +96,8 @@ export default function Index() {
       if (user) {
         setUser(user);
         setMode("online");
-        router.push("/(tabs)");
+        //router.push("/(tabs)");
+          router.replace("/(tabs)/home");
         setForm({
           email: "",
           password: "",
@@ -123,7 +124,8 @@ export default function Index() {
   const handleOfflineMode = async () => {
     setMode("offline");
     setUser("offline-user");
-    router.push("/(tabs)");
+    //router.push("/(tabs)");
+      router.replace("/(tabs)/home");
   };
 
   return (

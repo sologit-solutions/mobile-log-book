@@ -75,7 +75,14 @@ function RootLayoutContent() {
                             backgroundColor: theme.colors.background,
                         },
                     }}
-                />
+                >
+                    <Stack.Screen
+                        name="index"
+                        options={{
+                            animation: "slide_from_left"
+                        }}
+                        />
+                </Stack>
             </SafeAreaView>
         </SafeAreaProvider>
     );

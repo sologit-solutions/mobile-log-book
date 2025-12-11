@@ -1,7 +1,8 @@
 import {useOwnTheme} from "@/context/themeContext";
 import React, {useMemo, useState, useCallback} from "react";
-import {StyleSheet, Text, View, FlatList, ActivityIndicator} from "react-native";
+import {StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity} from "react-native";
 import {useSQLiteContext} from "expo-sqlite";
+import { useRouter } from "expo-router";
 import {useFocusEffect} from "@react-navigation/native";
 import {getLogs} from "@/database/db";
 
@@ -17,6 +18,7 @@ export interface Log {
 export default function EventList() {
     const {theme} = useOwnTheme();
     const styles = useMemo(() => createStyles(theme), [theme]);
+    const router = useRouter();
 
     const db = useSQLiteContext();
 
@@ -68,17 +70,24 @@ export default function EventList() {
      * @param item Log object containing timestamp, entry text, coordinates etc...
      */
     const renderItem = ({item}: { item: Log }) => (
-        <View style={styles.card}>
-            <View style={styles.cardHeader}>
-                <Text style={styles.dateText}>
-                    {new Date(item.timestamp).toLocaleString()}
+        <TouchableOpacity
+            onPress={() => {
+                router.push(`/events/${item.id}`)
+            }}
+            activeOpacity={0.7}
+        >
+            <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                    <Text style={styles.dateText}>
+                        {new Date(item.timestamp).toLocaleString()}
+                    </Text>
+                </View>
+                <Text style={styles.entryText}>{item.entry}</Text>
+                <Text style={styles.coordText}>
+                    Lat: {item.latitude.toFixed(8)}, Lon: {item.longitude.toFixed(8)}
                 </Text>
             </View>
-            <Text style={styles.entryText}>{item.entry}</Text>
-            <Text style={styles.coordText}>
-                Lat: {item.latitude.toFixed(8)}, Lon: {item.longitude.toFixed(8)}
-            </Text>
-        </View>
+        </TouchableOpacity>
     )
 
     return (
