@@ -78,9 +78,6 @@ function RootLayoutContent() {
                 >
                     <Stack.Screen
                         name="index"
-                        options={{
-                            animation: "slide_from_left"
-                        }}
                         />
                 </Stack>
             </SafeAreaView>

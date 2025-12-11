@@ -57,16 +57,18 @@ export async function addLog(
     longitude: number
 ) {
     const id = uuidv4();
+    const timestamp = new Date().toISOString();
 
     await db.runAsync(
         `
-    INSERT INTO logs (id, entry, latitude, longitude)
-    VALUES (?, ?, ?, ?)
+    INSERT INTO logs (id, entry, latitude, longitude, timestamp)
+    VALUES (?, ?, ?, ?, ?)
   `,
         id,
         entry,
         latitude,
-        longitude
+        longitude,
+        timestamp
     );
 
     return id;
@@ -80,6 +82,16 @@ export async function getLogs(db: SQLiteDatabase) {
     SELECT * FROM logs
     ORDER BY timestamp DESC
   `);
+}
+
+/**
+ * Fetch a singular log
+ */
+export async function getLogById(db: SQLiteDatabase, id: string) {
+    return db.getFirstAsync(
+        `SELECT * FROM logs WHERE id = ?`,
+        id
+    );
 }
 
 /**

@@ -202,6 +202,7 @@ export default function Index() {
       </TouchableOpacity>
 
       {/*Sign up button*/}
+      {/*TODO: Implement ability to create an account*/}
       <TouchableOpacity
         style={styles.signUpLink}
         onPress={() => alert("Sign up man")}
