@@ -48,25 +48,34 @@ export default function AddActivity() {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.text}>Add an activity here</Text>
+            {!loading && <Text style={styles.text}>Add an activity here</Text>}
 
-            {/* 2x3 Grid of buttons */}
-            <View style={styles.gridContainer}>
-                <View style={styles.row}>
-                    <ActivityButton label="Hoist sails" onPress={handleAdd1} theme={theme}/>
-                    <ActivityButton label="Lower sails" onPress={handleAdd2} theme={theme}/>
+            {/*Show spinner if app is fetching location*/}
+            {loading ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={theme.colors.textPrimary} />
+                    <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>
+                        Acquiring location...
+                    </Text>
                 </View>
+            ) : (
+                <View style={styles.gridContainer}>
+                    <View style={styles.row}>
+                        <ActivityButton label="Hoist sails" onPress={handleAdd1} theme={theme}/>
+                        <ActivityButton label="Lower sails" onPress={handleAdd2} theme={theme}/>
+                    </View>
 
-                <View style={styles.row}>
-                    <ActivityButton label="Hoist anchor" onPress={handleAdd3} theme={theme}/>
-                    <ActivityButton label="Lower anchor" onPress={handleAdd4} theme={theme}/>
-                </View>
+                    <View style={styles.row}>
+                        <ActivityButton label="Hoist anchor" onPress={handleAdd3} theme={theme}/>
+                        <ActivityButton label="Lower anchor" onPress={handleAdd4} theme={theme}/>
+                    </View>
 
-                <View style={styles.row}>
-                    <ActivityButton label="Engine on" onPress={handleAdd5} theme={theme}/>
-                    <ActivityButton label="Engine off" onPress={handleAdd6} theme={theme}/>
+                    <View style={styles.row}>
+                        <ActivityButton label="Engine on" onPress={handleAdd5} theme={theme}/>
+                        <ActivityButton label="Engine off" onPress={handleAdd6} theme={theme}/>
+                    </View>
                 </View>
-            </View>
+            )}
         </View>
     );
 }
@@ -95,6 +104,15 @@ const createStyles = (theme: any) =>
             fontSize: 18,
             fontWeight: "600",
             marginBottom: 20,
+        },
+        loadingContainer: {
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: 200,
+        },
+        loadingText: {
+            marginTop: 10,
+            fontSize: 14,
         },
         gridContainer: {
             width: "100%",

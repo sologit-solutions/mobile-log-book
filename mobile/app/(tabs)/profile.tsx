@@ -12,9 +12,9 @@ export default function Profile() {
   const router = useRouter();
 
   const handleLogout = () => {
-    logout();
+    void logout();
     //Alert.alert("Logged out", "You have been logged out successfully");
-    router.replace("../");
+    router.replace("/");
   };
 
   return (

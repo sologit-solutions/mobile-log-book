@@ -75,7 +75,11 @@ function RootLayoutContent() {
                             backgroundColor: theme.colors.background,
                         },
                     }}
-                />
+                >
+                    <Stack.Screen
+                        name="index"
+                        />
+                </Stack>
             </SafeAreaView>
         </SafeAreaProvider>
     );

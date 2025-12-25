@@ -96,7 +96,8 @@ export default function Index() {
       if (user) {
         setUser(user);
         setMode("online");
-        router.push("/(tabs)");
+        //router.push("/(tabs)");
+          router.replace("/(tabs)/home");
         setForm({
           email: "",
           password: "",
@@ -123,7 +124,8 @@ export default function Index() {
   const handleOfflineMode = async () => {
     setMode("offline");
     setUser("offline-user");
-    router.push("/(tabs)");
+    //router.push("/(tabs)");
+      router.replace("/(tabs)/home");
   };
 
   return (
@@ -200,6 +202,7 @@ export default function Index() {
       </TouchableOpacity>
 
       {/*Sign up button*/}
+      {/*TODO: Implement ability to create an account*/}
       <TouchableOpacity
         style={styles.signUpLink}
         onPress={() => alert("Sign up man")}

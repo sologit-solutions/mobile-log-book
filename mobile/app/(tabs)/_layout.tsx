@@ -23,13 +23,13 @@ export default function LayoutContent() {
             }}
           />
           <Tabs.Screen
-            name="index"
+            name="home"
             options={{
               title: "Add event",
             }}
           />
           <Tabs.Screen
-            name="eventList"
+            name="events"
             options={{
               title: "Event list",
             }}

@@ -12,9 +12,9 @@ export default function TabBar({ state, descriptors, navigation }) {
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   const icons = {
-    index: (props) => <FontAwesome name="plus-square-o" size={24} {...props} />,
+    home: (props) => <FontAwesome name="plus-square-o" size={24} {...props} />,
     profile: (props) => <FontAwesome name="user-o" size={24} {...props} />,
-    eventList: (props) => <FontAwesome6 name="list-alt" size={24} {...props} />,
+    events: (props) => <FontAwesome6 name="list-alt" size={24} {...props} />,
   };
 
   return (
