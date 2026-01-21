@@ -18,7 +18,7 @@ import { DARK_THEME } from "@/assets/styles/defaultColors";
 import { useOwnTheme } from "@/context/themeContext";
 import { useAppState } from "@/state/appState";
 import { loginUser } from "@/utils/api";
-import { useRouter } from "expo-router";
+import {Link, useRouter} from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
   Alert,
@@ -33,6 +33,7 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
+  Modal
 } from "react-native";
 
 const PlaceHolderLogo = require("@/assets/images/boat-outline.png");
@@ -54,6 +55,14 @@ const { width, height } = Dimensions.get("window");
  */
 export default function Index() {
   const [form, setForm] = useState({ email: "", password: "" });
+
+  // Sign Up Modal State
+  const [signupVisible, setSignupVisible] = useState(false);
+  const [signupForm, setSignupForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
 
   /**
    * Access to applications state functions
@@ -126,6 +135,33 @@ export default function Index() {
     setUser("offline-user");
     //router.push("/(tabs)");
       router.replace("/(tabs)/home");
+  };
+
+  // --- Sign Up Handlers ---
+
+  const handleSignup = () => {
+    // Basic validation
+    if (!signupForm.name || !signupForm.email || !signupForm.password) {
+      Alert.alert("Missing Information", "Please fill in all fields.");
+      return;
+    }
+
+    // TODO: Connect to backend registration API here
+    console.log("Creating account for:", signupForm);
+
+    Alert.alert(
+        "Success",
+        `Account created for ${signupForm.name}! You can now log in.`,
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              setSignupVisible(false);
+              setSignupForm({ name: "", email: "", password: "" });
+            }
+          }
+        ]
+    );
   };
 
   return (
@@ -201,17 +237,82 @@ export default function Index() {
         </TouchableOpacity>
       </TouchableOpacity>
 
-      {/*Sign up button*/}
-      {/*TODO: Implement ability to create an account*/}
+      {/* Sign Up Link */}
       <TouchableOpacity
-        style={styles.signUpLink}
-        onPress={() => alert("Sign up man")}
+          style={styles.signUpLink}
+          onPress={() => setSignupVisible(true)}
       >
         <Text style={styles.signUpLinkText}>
           Don&#39;t have an account?{" "}
           <Text style={styles.signUpLinkUnderlined}>Sign up here</Text>
         </Text>
       </TouchableOpacity>
+
+      {/*Sign up button*/}
+      <Modal
+          animationType="slide"
+          transparent={true}
+          visible={signupVisible}
+          onRequestClose={() => setSignupVisible(false)}
+      >
+        {/* Modal Overlay (Semi-transparent background) */}
+        <View style={styles.modalOverlay}>
+          {/* Modal Content Card */}
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Create Account</Text>
+
+            {/* Name Input */}
+            <TextInput
+                value={signupForm.name}
+                onChangeText={(text) => setSignupForm({ ...signupForm, name: text })}
+                style={styles.input} // Reusing existing input style
+                placeholder="Name"
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholderTextColor={theme.textSecondary || "#888"}
+            />
+
+            {/* Email Input */}
+            <TextInput
+                value={signupForm.email}
+                onChangeText={(text) => setSignupForm({ ...signupForm, email: text })}
+                style={[styles.input, { marginTop: 15 }]}
+                placeholder="Email"
+                placeholderTextColor={theme.textSecondary || "#888"}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+            />
+
+            {/* Password Input */}
+            <TextInput
+                value={signupForm.password}
+                onChangeText={(text) => setSignupForm({ ...signupForm, password: text })}
+                style={[styles.input, { marginTop: 15 }]}
+                placeholder="Password"
+                placeholderTextColor={theme.textSecondary || "#888"}
+                secureTextEntry
+            />
+
+            {/* Action Buttons */}
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => setSignupVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                  style={[styles.modalButton, styles.createButton]}
+                  onPress={handleSignup}
+              >
+                <Text style={styles.createButtonText}>Sign Up</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -305,5 +406,64 @@ const createStyles = (theme: any) =>
     },
     signUpLinkUnderlined: {
       textDecorationLine: "underline",
+    },
+    modalOverlay: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "rgba(0, 0, 0, 0.7)",
+    },
+    modalContent: {
+      width: "85%",
+      backgroundColor: DARK_THEME.background,
+      borderRadius: 20,
+      padding: 20,
+      alignItems: "center",
+      elevation: 5,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+      borderWidth: 1,
+      borderColor: DARK_THEME.surface,
+    },
+    modalTitle: {
+      fontSize: 22,
+      fontWeight: "bold",
+      color: DARK_THEME.textPrimary,
+      marginBottom: 20,
+    },
+    modalButtons: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      width: "100%",
+      marginTop: 25,
+    },
+    modalButton: {
+      flex: 1,
+      paddingVertical: 12,
+      borderRadius: 10,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    cancelButton: {
+      marginRight: 10,
+      backgroundColor: "transparent",
+      borderWidth: 1,
+      borderColor: DARK_THEME.textSecondary || "#888",
+    },
+    createButton: {
+      marginLeft: 10,
+      backgroundColor: DARK_THEME.surface,
+    },
+    cancelButtonText: {
+      color: DARK_THEME.textPrimary,
+      fontWeight: "600",
+      fontSize: 16,
+    },
+    createButtonText: {
+      color: DARK_THEME.textPrimary,
+      fontWeight: "bold",
+      fontSize: 16,
     },
   });
