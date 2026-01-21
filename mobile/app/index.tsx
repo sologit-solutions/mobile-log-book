@@ -19,7 +19,7 @@ import { useOwnTheme } from "@/context/themeContext";
 import { useAppState } from "@/state/appState";
 import { loginUser } from "@/utils/api";
 import {Link, useRouter} from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, {JSX, useMemo, useState} from "react";
 import {
   Alert,
   Dimensions,
@@ -53,7 +53,7 @@ const { width, height } = Dimensions.get("window");
  * @see loginUser
  * @see useRouter
  */
-export default function Index() {
+export default function Index(): JSX.Element {
   const [form, setForm] = useState({ email: "", password: "" });
 
   // Sign Up Modal State
@@ -63,6 +63,10 @@ export default function Index() {
     email: "",
     password: "",
   });
+
+  // Forgot Password Modal State
+  const [forgotPasswordVisible, setForgotPasswordVisible] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
 
   /**
    * Access to applications state functions
@@ -99,7 +103,7 @@ export default function Index() {
    * @returns {Promise <void>}
    * @throws {Error} if login fails or API call fails
    */
-  const handleOnlineLogin = async () => {
+  const handleOnlineLogin = async (): Promise<void> => {
     try {
       const user = await loginUser(form.email, form.password);
       if (user) {
@@ -164,6 +168,31 @@ export default function Index() {
     );
   };
 
+  // --- Forgot Password Handlers ---
+
+  const handleResetPassword = () => {
+    if (!resetEmail) {
+      Alert.alert("Missing Information", "Please enter your email address.");
+      return;
+    }
+    // TODO: Connect to backend password reset API here
+    console.log("Sending reset link to:", resetEmail);
+
+    Alert.alert(
+        "Check your email",
+        `We have sent a password reset link to ${resetEmail}`,
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              setForgotPasswordVisible(false);
+              setResetEmail("");
+            },
+          },
+        ]
+    );
+  };
+
   return (
     /**
      * KeyboardAvoidingView component for better mobile UX
@@ -218,6 +247,14 @@ export default function Index() {
             >
               <Text style={styles.signInButtonText}>Sign in</Text>
             </TouchableOpacity>
+
+            {/* Forgot Password Link - Right under the login button */}
+            <TouchableOpacity
+                style={styles.forgotPasswordContainer}
+                onPress={() => setForgotPasswordVisible(true)}
+            >
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </TouchableWithoutFeedback>
@@ -248,9 +285,12 @@ export default function Index() {
         </Text>
       </TouchableOpacity>
 
-      {/*Sign up button*/}
+      {/* ------------------------------------------------------------
+        SIGN UP MODAL
+        ------------------------------------------------------------
+      */}
       <Modal
-          animationType="slide"
+          animationType="fade"
           transparent={true}
           visible={signupVisible}
           onRequestClose={() => setSignupVisible(false)}
@@ -308,6 +348,53 @@ export default function Index() {
                   onPress={handleSignup}
               >
                 <Text style={styles.createButtonText}>Sign Up</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ------------------------------------------------------------
+        FORGOT PASSWORD MODAL
+        ------------------------------------------------------------
+      */}
+      <Modal
+          animationType="fade" // Changed to fade for variety, or use "slide"
+          transparent={true}
+          visible={forgotPasswordVisible}
+          onRequestClose={() => setForgotPasswordVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Reset Password</Text>
+            <Text style={styles.modalSubtitle}>
+              Enter your email to receive a reset link.
+            </Text>
+
+            <TextInput
+                value={resetEmail}
+                onChangeText={setResetEmail}
+                style={styles.input}
+                placeholder="Email"
+                placeholderTextColor={theme.textSecondary || "#888"}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+            />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => setForgotPasswordVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                  style={[styles.modalButton, styles.createButton]}
+                  onPress={handleResetPassword}
+              >
+                <Text style={styles.createButtonText}>Send Link</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -433,6 +520,12 @@ const createStyles = (theme: any) =>
       color: DARK_THEME.textPrimary,
       marginBottom: 20,
     },
+    modalSubtitle: {
+      fontSize: 14,
+      color: DARK_THEME.textPrimary, // or secondary
+      marginBottom: 20,
+      textAlign: 'center',
+    },
     modalButtons: {
       flexDirection: "row",
       justifyContent: "space-between",
@@ -465,5 +558,16 @@ const createStyles = (theme: any) =>
       color: DARK_THEME.textPrimary,
       fontWeight: "bold",
       fontSize: 16,
+    },
+    forgotPasswordContainer: {
+      alignItems: 'center',
+      marginTop: 15,
+      padding: 5,
+    },
+    forgotPasswordText: {
+      color: DARK_THEME.textPrimary, // or a secondary color like '#888'
+      fontSize: 14,
+      fontWeight: "500",
+      textDecorationLine: "underline",
     },
   });

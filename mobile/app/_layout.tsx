@@ -82,7 +82,8 @@ function RootLayoutContent() {
                     <Stack.Screen
                         name="modal"
                         options={{
-                            presentation: "modal"
+                            presentation: "modal",
+                            headerShown: false,
                         }}
                         />
                 </Stack>
