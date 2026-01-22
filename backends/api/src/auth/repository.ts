@@ -3,7 +3,7 @@ import { prisma } from "../configs/db.ts";
 import type { User } from "@prisma/client";
 
 export const createUser = async (
-  user: Pick<User, "username" | "email" | "pwdHash">,
+  user: Pick<User, "username" | "email" | "hash">,
 ) => {
   try {
     await prisma.user.create({
