@@ -5,11 +5,13 @@ import {getCurrentLocation} from "@/utils/location";
 
 import {useSQLiteContext} from "expo-sqlite";
 import {addLog} from "@/database/db";
+import {useAppState} from "@/state/appState";
 
 export default function AddActivity() {
     const {theme} = useOwnTheme();
     const styles = useMemo(() => createStyles(theme), [theme]);
 
+    const { currentVessel } = useAppState();
     const db = useSQLiteContext();
     const [loading, setLoading] = useState(false);
 
@@ -25,6 +27,7 @@ export default function AddActivity() {
                 buttonLabel,
                 location.coords.latitude,
                 location.coords.longitude,
+                currentVessel?.id
             );
 
             console.log(`SUCCESS: Saved to DB with ID: ${newId}`);

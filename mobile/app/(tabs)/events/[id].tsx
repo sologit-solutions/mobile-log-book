@@ -11,6 +11,7 @@ interface Log {
     latitude: number;
     longitude: number;
     timestamp: string;
+    vessel_name?: string | null;
 }
 
 export default function EventDetail() {
@@ -107,79 +108,91 @@ export default function EventDetail() {
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={{flex: 1, backgroundColor: theme.colors.background}}
         >
-            <ScrollView contentContainerStyle={{flexGrow: 1}} keyboardShouldPersistTaps="handled">
-                <View style={styles.container}>
+            <View style={styles.container}>
 
-                    <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                        <Text style={styles.buttonText}>Back</Text>
-                    </TouchableOpacity>
+                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                    <Text style={styles.buttonText}>Back</Text>
+                </TouchableOpacity>
 
-                    <View style={styles.contentContainer}>
-                        <Text style={styles.headerTitle}>Edit Event</Text>
+                <View style={styles.contentContainer}>
+                    <Text style={styles.headerTitle}>Edit Event</Text>
 
-                        <View style={styles.card}>
-                            <View style={styles.row}>
-                                <Text style={styles.label}>Date</Text>
-                                <Text style={styles.value}>
-                                    {log ? new Date(log.timestamp).toLocaleDateString() : "-"}
-                                </Text>
-                            </View>
-                            <View style={styles.row}>
-                                <Text style={styles.label}>Time</Text>
-                                <Text style={styles.value}>
-                                    {log ? new Date(log.timestamp).toLocaleTimeString() : "-"}
-                                </Text>
-                            </View>
-
-                            {/*TODO: Show if N/S and if E/S*/}
-                            <View style={[styles.coordSection, { borderBottomWidth: 0 }]}>
-                                <Text style={[styles.label, { marginBottom: 8 }]}>Coordinates</Text>
-
-                                <View style={styles.coordRow}>
-                                    <Text style={styles.coordLabel}>Lat:</Text>
-                                    <Text style={styles.valueCoord}>{log?.latitude.toFixed(8)}</Text>
-                                </View>
-
-                                <View style={styles.coordRow}>
-                                    <Text style={styles.coordLabel}>Lon:</Text>
-                                    <Text style={styles.valueCoord}>{log?.longitude.toFixed(8)}</Text>
-                                </View>
-                            </View>
+                    <View style={styles.card}>
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Vessel</Text>
+                            <Text style={[styles.value, { color: theme.colors.primary, fontWeight: 'bold' }]}>
+                                {log?.vessel_name || "-"}
+                            </Text>
+                        </View>
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Date</Text>
+                            <Text style={styles.value}>
+                                {log ? new Date(log.timestamp).toLocaleDateString() : "-"}
+                            </Text>
+                        </View>
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Time</Text>
+                            <Text style={styles.value}>
+                                {log ? new Date(log.timestamp).toLocaleTimeString() : "-"}
+                            </Text>
                         </View>
 
-                        <Text style={styles.inputLabel}>Activity Name</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={inputText}
-                            onChangeText={setInputText}
-                            placeholder="Activity description"
-                            placeholderTextColor={theme.colors.textSecondary}
-                        />
+                        {/*TODO: Show if N/S and if E/S*/}
+                        <View style={[styles.coordSection, { borderBottomWidth: 0 }]}>
+                            <Text style={[styles.label, { marginBottom: 8 }]}>Coordinates</Text>
 
-                        <View style={styles.buttonContainer}>
-                            <TouchableOpacity
-                                style={styles.actionButton}
-                                onPress={handleUpdate}
-                                disabled={isSaving}
-                            >
-                                {isSaving ? (
-                                    <ActivityIndicator color={theme.colors.textPrimary} />
-                                ) : (
-                                    <Text style={styles.actionButtonText}>Save Changes</Text>
-                                )}
-                            </TouchableOpacity>
+                            <View style={styles.coordRow}>
+                                <Text style={styles.coordLabel}>Lat:</Text>
+                                <Text style={styles.valueCoord}>
+                                    {log
+                                        ? `${Math.abs(log.latitude).toFixed(8)}°${log.latitude >= 0 ? "N" : "S"}`
+                                        : "-"}
+                                </Text>
+                            </View>
 
-                            <TouchableOpacity
-                                style={[styles.actionButton, styles.deleteButton]}
-                                onPress={handleDelete}
-                                disabled={isSaving}
-                            >
-                                <Text style={[styles.actionButtonText, styles.deleteText]}>Delete Event</Text>
-                            </TouchableOpacity>
+                            <View style={styles.coordRow}>
+                                <Text style={styles.coordLabel}>Lon:</Text>
+                                <Text style={styles.valueCoord}>
+                                    {log
+                                        ? `${Math.abs(log.longitude).toFixed(8)}°${log.longitude >= 0 ? "E" : "W"}`
+                                        : "-"}
+                                </Text>
+                            </View>
                         </View>
                     </View>
+
+                    <Text style={styles.inputLabel}>Activity Name</Text>
+                    <TextInput
+                        style={styles.input}
+                        value={inputText}
+                        onChangeText={setInputText}
+                        placeholder="Activity description"
+                        placeholderTextColor={theme.colors.textSecondary}
+                    />
+
+                    <View style={styles.buttonContainer}>
+                        <TouchableOpacity
+                            style={styles.actionButton}
+                            onPress={handleUpdate}
+                            disabled={isSaving}
+                        >
+                            {isSaving ? (
+                                <ActivityIndicator color={theme.colors.textPrimary} />
+                            ) : (
+                                <Text style={styles.actionButtonText}>Save Changes</Text>
+                            )}
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[styles.actionButton, styles.deleteButton]}
+                            onPress={handleDelete}
+                            disabled={isSaving}
+                        >
+                            <Text style={[styles.actionButtonText, styles.deleteText]}>Delete Event</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
-            </ScrollView>
+            </View>
         </KeyboardAvoidingView>
     );
 }
@@ -224,7 +237,7 @@ const createStyles = (theme: any) =>
         card: {
             backgroundColor: theme.colors.surface,
             borderRadius: 10,
-            padding: 16,
+            padding: 12,
             marginBottom: 24,
             elevation: 3,
             shadowColor: "#000",
@@ -236,7 +249,7 @@ const createStyles = (theme: any) =>
             flexDirection: "row",
             justifyContent: "space-between",
             alignItems: "center",
-            paddingVertical: 12,
+            paddingVertical: 9,
             borderBottomWidth: 1,
             borderBottomColor: theme.colors.background,
         },

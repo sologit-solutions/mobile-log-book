@@ -40,8 +40,15 @@ type AppStateContextType = {
   setMode: (mode: AppMode) => void;
   user: string | null;
   setUser: (user: string | null) => void;
+  currentVessel: VesselState;
+  setCurrentVessel: (vessel: VesselState) => void;
   logout: () => Promise<void>;
 };
+
+type VesselState = {
+  id: string;
+  name: string;
+} | null;
 
 /**
  * Creates a React Context with the type of AppStateContextType
@@ -76,6 +83,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [mode, setMode] = useState<AppMode>("online");
   const [user, setUser] = useState<string | null>(null);
+  const [currentVessel, setCurrentVessel] = useState<VesselState>(null);
 
   /**
    * Initialise state from persistent storage on application start
@@ -84,8 +92,16 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
     (async () => {
       const savedMode = await AsyncStorage.getItem("appMode");
       const savedUser = await AsyncStorage.getItem("user");
+      const savedVessel = await AsyncStorage.getItem("currentVessel");
       if (savedMode === "offline") setMode("offline");
       if (savedUser) setUser(savedUser);
+      if (savedVessel) {
+        try {
+          setCurrentVessel(JSON.parse(savedVessel));
+        } catch (e) {
+          console.error("Failed to parse saved vessel");
+        }
+      }
     })();
   }, []);
 
@@ -106,19 +122,31 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [user]);
 
   /**
+   * Save current vessel whenever it changes
+   */
+  useEffect(() => {
+    if (currentVessel) {
+      AsyncStorage.setItem("currentVessel", JSON.stringify(currentVessel));
+    } else {
+      AsyncStorage.removeItem("currentVessel");
+    }
+  }, [currentVessel]);
+
+  /**
    * Resets all user-related state
    * Clears persistent storage
    * Sets app back to offline mode
    */
   const logout = async () => {
     setUser(null);
+    setCurrentVessel(null);
     setMode("offline");
     await AsyncStorage.multiRemove(["appMode", "user"]);
     console.log("User logged out, mode reset to offline");
   };
 
   return (
-    <AppStateContext.Provider value={{ mode, setMode, user, setUser, logout }}>
+    <AppStateContext.Provider value={{ mode, setMode, user, setUser, currentVessel, setCurrentVessel, logout }}>
       {children}
     </AppStateContext.Provider>
   );

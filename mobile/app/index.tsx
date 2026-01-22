@@ -18,8 +18,8 @@ import { DARK_THEME } from "@/assets/styles/defaultColors";
 import { useOwnTheme } from "@/context/themeContext";
 import { useAppState } from "@/state/appState";
 import { loginUser } from "@/utils/api";
-import { useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import {Link, useRouter} from "expo-router";
+import React, {JSX, useMemo, useState} from "react";
 import {
   Alert,
   Dimensions,
@@ -33,6 +33,7 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
+  Modal
 } from "react-native";
 
 const PlaceHolderLogo = require("@/assets/images/boat-outline.png");
@@ -52,8 +53,20 @@ const { width, height } = Dimensions.get("window");
  * @see loginUser
  * @see useRouter
  */
-export default function Index() {
+export default function Index(): JSX.Element {
   const [form, setForm] = useState({ email: "", password: "" });
+
+  // Sign Up Modal State
+  const [signupVisible, setSignupVisible] = useState(false);
+  const [signupForm, setSignupForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+
+  // Forgot Password Modal State
+  const [forgotPasswordVisible, setForgotPasswordVisible] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
 
   /**
    * Access to applications state functions
@@ -90,7 +103,7 @@ export default function Index() {
    * @returns {Promise <void>}
    * @throws {Error} if login fails or API call fails
    */
-  const handleOnlineLogin = async () => {
+  const handleOnlineLogin = async (): Promise<void> => {
     try {
       const user = await loginUser(form.email, form.password);
       if (user) {
@@ -126,6 +139,58 @@ export default function Index() {
     setUser("offline-user");
     //router.push("/(tabs)");
       router.replace("/(tabs)/home");
+  };
+
+  // --- Sign Up Handlers ---
+
+  const handleSignup = () => {
+    // Basic validation
+    if (!signupForm.name || !signupForm.email || !signupForm.password) {
+      Alert.alert("Missing Information", "Please fill in all fields.");
+      return;
+    }
+
+    // TODO: Connect to backend registration API here
+    console.log("Creating account for:", signupForm);
+
+    Alert.alert(
+        "Success",
+        `Account created for ${signupForm.name}! You can now log in.`,
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              setSignupVisible(false);
+              setSignupForm({ name: "", email: "", password: "" });
+            }
+          }
+        ]
+    );
+  };
+
+  // --- Forgot Password Handlers ---
+
+  const handleResetPassword = () => {
+    if (!resetEmail) {
+      Alert.alert("Missing Information", "Please enter your email address.");
+      return;
+    }
+    // TODO: Connect to backend password reset API here
+    console.log("Sending reset link to:", resetEmail);
+
+    Alert.alert(
+        "Check your email",
+        `We have sent a password reset link to ${resetEmail}`,
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              setForgotPasswordVisible(false);
+              setResetEmail("");
+            },
+          },
+        ]
+    );
   };
 
   return (
@@ -182,6 +247,14 @@ export default function Index() {
             >
               <Text style={styles.signInButtonText}>Sign in</Text>
             </TouchableOpacity>
+
+            {/* Forgot Password Link - Right under the login button */}
+            <TouchableOpacity
+                style={styles.forgotPasswordContainer}
+                onPress={() => setForgotPasswordVisible(true)}
+            >
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </TouchableWithoutFeedback>
@@ -201,17 +274,132 @@ export default function Index() {
         </TouchableOpacity>
       </TouchableOpacity>
 
-      {/*Sign up button*/}
-      {/*TODO: Implement ability to create an account*/}
+      {/* Sign Up Link */}
       <TouchableOpacity
-        style={styles.signUpLink}
-        onPress={() => alert("Sign up man")}
+          style={styles.signUpLink}
+          onPress={() => setSignupVisible(true)}
       >
         <Text style={styles.signUpLinkText}>
           Don&#39;t have an account?{" "}
           <Text style={styles.signUpLinkUnderlined}>Sign up here</Text>
         </Text>
       </TouchableOpacity>
+
+      {/* ------------------------------------------------------------
+        SIGN UP MODAL
+        ------------------------------------------------------------
+      */}
+      <Modal
+          animationType="fade"
+          transparent={true}
+          visible={signupVisible}
+          onRequestClose={() => setSignupVisible(false)}
+      >
+        {/* Modal Overlay (Semi-transparent background) */}
+        <View style={styles.modalOverlay}>
+          {/* Modal Content Card */}
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Create Account</Text>
+
+            {/* Name Input */}
+            <TextInput
+                value={signupForm.name}
+                onChangeText={(text) => setSignupForm({ ...signupForm, name: text })}
+                style={styles.input} // Reusing existing input style
+                placeholder="Name"
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholderTextColor={theme.textSecondary || "#888"}
+            />
+
+            {/* Email Input */}
+            <TextInput
+                value={signupForm.email}
+                onChangeText={(text) => setSignupForm({ ...signupForm, email: text })}
+                style={[styles.input, { marginTop: 15 }]}
+                placeholder="Email"
+                placeholderTextColor={theme.textSecondary || "#888"}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+            />
+
+            {/* Password Input */}
+            <TextInput
+                value={signupForm.password}
+                onChangeText={(text) => setSignupForm({ ...signupForm, password: text })}
+                style={[styles.input, { marginTop: 15 }]}
+                placeholder="Password"
+                placeholderTextColor={theme.textSecondary || "#888"}
+                secureTextEntry
+            />
+
+            {/* Action Buttons */}
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => setSignupVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                  style={[styles.modalButton, styles.createButton]}
+                  onPress={handleSignup}
+              >
+                <Text style={styles.createButtonText}>Sign Up</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ------------------------------------------------------------
+        FORGOT PASSWORD MODAL
+        ------------------------------------------------------------
+      */}
+      <Modal
+          animationType="fade" // Changed to fade for variety, or use "slide"
+          transparent={true}
+          visible={forgotPasswordVisible}
+          onRequestClose={() => setForgotPasswordVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Reset Password</Text>
+            <Text style={styles.modalSubtitle}>
+              Enter your email to receive a reset link.
+            </Text>
+
+            <TextInput
+                value={resetEmail}
+                onChangeText={setResetEmail}
+                style={styles.input}
+                placeholder="Email"
+                placeholderTextColor={theme.textSecondary || "#888"}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+            />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => setForgotPasswordVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                  style={[styles.modalButton, styles.createButton]}
+                  onPress={handleResetPassword}
+              >
+                <Text style={styles.createButtonText}>Send Link</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -304,6 +492,82 @@ const createStyles = (theme: any) =>
       color: DARK_THEME.textPrimary,
     },
     signUpLinkUnderlined: {
+      textDecorationLine: "underline",
+    },
+    modalOverlay: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "rgba(0, 0, 0, 0.7)",
+    },
+    modalContent: {
+      width: "85%",
+      backgroundColor: DARK_THEME.background,
+      borderRadius: 20,
+      padding: 20,
+      alignItems: "center",
+      elevation: 5,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+      borderWidth: 1,
+      borderColor: DARK_THEME.surface,
+    },
+    modalTitle: {
+      fontSize: 22,
+      fontWeight: "bold",
+      color: DARK_THEME.textPrimary,
+      marginBottom: 20,
+    },
+    modalSubtitle: {
+      fontSize: 14,
+      color: DARK_THEME.textPrimary, // or secondary
+      marginBottom: 20,
+      textAlign: 'center',
+    },
+    modalButtons: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      width: "100%",
+      marginTop: 25,
+    },
+    modalButton: {
+      flex: 1,
+      paddingVertical: 12,
+      borderRadius: 10,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    cancelButton: {
+      marginRight: 10,
+      backgroundColor: "transparent",
+      borderWidth: 1,
+      borderColor: DARK_THEME.textSecondary || "#888",
+    },
+    createButton: {
+      marginLeft: 10,
+      backgroundColor: DARK_THEME.surface,
+    },
+    cancelButtonText: {
+      color: DARK_THEME.textPrimary,
+      fontWeight: "600",
+      fontSize: 16,
+    },
+    createButtonText: {
+      color: DARK_THEME.textPrimary,
+      fontWeight: "bold",
+      fontSize: 16,
+    },
+    forgotPasswordContainer: {
+      alignItems: 'center',
+      marginTop: 15,
+      padding: 5,
+    },
+    forgotPasswordText: {
+      color: DARK_THEME.textPrimary, // or a secondary color like '#888'
+      fontSize: 14,
+      fontWeight: "500",
       textDecorationLine: "underline",
     },
   });
