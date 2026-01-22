@@ -13,6 +13,7 @@ export interface Log {
     longitude: number;
     timestamp: string;
     updated_at: string;
+    vessel_name?: string | null;
 }
 
 export default function EventList() {
@@ -81,6 +82,11 @@ export default function EventList() {
                     <Text style={styles.dateText}>
                         {new Date(item.timestamp).toLocaleString()}
                     </Text>
+                    {item.vessel_name && (
+                        <Text style={styles.vesselNameText}>
+                            {item.vessel_name}
+                        </Text>
+                    )}
                 </View>
                 <Text style={styles.entryText}>{item.entry}</Text>
                 <Text style={styles.coordText}>
@@ -165,5 +171,16 @@ const createStyles = (theme: any) =>
         emptyText: {
             color: theme.colors.textSecondary, // || "#8e8e93",
             fontSize: 16,
+        },
+        vesselNameText: {
+            color: theme.colors.primary, // Using primary color to pop
+            fontSize: 12,
+            fontWeight: "bold",
+            textTransform: "uppercase",
+            backgroundColor: 'rgba(0, 122, 255, 0.1)', // Subtle background pill
+            paddingHorizontal: 8,
+            paddingVertical: 2,
+            borderRadius: 4,
+            overflow: 'hidden',
         },
     });
