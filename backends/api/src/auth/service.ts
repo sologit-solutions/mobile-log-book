@@ -11,21 +11,27 @@ export const createUser = async (
     hash: await auth.hashPassword(password),
     ...fields,
   };
-  return await repository.createUser(user);
+  const result = await repository.createUser(user);
+  if (result.success) {
+    return { ...result, data: auth.issueJWT(result.data?.userId) };
+  }
+  return result;
 };
 
 export const authenticate = async (userdata: {
   usernameOrEmail: string;
   password: string;
 }) => {
-  let identifier;
+  let user;
+  let queryResult;
   const validationResult = emailValidator.safeParse(userdata.usernameOrEmail);
   if (validationResult.success) {
-    identifier = { email: userdata.usernameOrEmail };
+    user = { email: userdata.usernameOrEmail };
+    queryResult = await repository.getUserByEmail(user);
   } else {
-    identifier = { username: userdata.usernameOrEmail };
+    user = { username: userdata.usernameOrEmail };
+    queryResult = await repository.getUserByUsername(user);
   }
-  const queryResult = await repository.getPwdHash(identifier);
   if (queryResult) {
     const { hash, ...user } = queryResult;
     const verifyResult = await auth.verifyPassword(userdata.password, hash);

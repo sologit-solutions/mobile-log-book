@@ -15,7 +15,7 @@ router.post("/signup", async (req, res) => {
   if (!serviceResult.success) {
     return res.json(serviceResult.error);
   }
-  return res.json({ success: validationResult.success });
+  return res.json(serviceResult);
 });
 
 router.post("/login", async (req, res) => {

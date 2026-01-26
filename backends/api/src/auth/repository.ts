@@ -2,18 +2,36 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../configs/db.ts";
 import type { User } from "@prisma/client";
 
+type CreateUserSuccess = {
+  success: true;
+  data: {
+    userId: number;
+  };
+};
+
+type CreateUserFailure = {
+  success: false;
+  error: {
+    code?: string;
+    message?: string;
+  };
+};
+
+type CreateUserResult = CreateUserSuccess | CreateUserFailure;
+
 export const createUser = async (
   user: Pick<User, "username" | "email" | "hash">,
-) => {
+): Promise<CreateUserResult> => {
   try {
-    await prisma.user.create({
+    const data = await prisma.user.create({
       data: user,
     });
+    return { success: true, data: { userId: data.id } };
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError) {
       if (e.code === "P2002") {
         const target = e.meta?.target as string[];
-        if (target[0] === "name") {
+        if (target[0] === "username") {
           return {
             success: false,
             error: {
@@ -36,20 +54,26 @@ export const createUser = async (
     }
     return { success: false, error: { message: "Unknown error" } };
   }
-  return { success: true };
 };
 
-export const getPwdHash = async (
+export const getUserByEmail = async (
   user: Partial<Pick<User, "username" | "email">>,
 ) => {
   try {
     return await prisma.user.findFirstOrThrow({
-      where: {
-        OR: [
-          user.email ? { email: user.email } : undefined,
-          user.username ? { username: user.username } : undefined,
-        ].filter(Boolean) as any[],
-      },
+      where: { email: user.email },
+    });
+  } catch (e) {
+    // TODO: error handling
+  }
+};
+
+export const getUserByUsername = async (
+  user: Partial<Pick<User, "username" | "email">>,
+) => {
+  try {
+    return await prisma.user.findFirstOrThrow({
+      where: { username: user.username },
     });
   } catch (e) {
     // TODO: error handling

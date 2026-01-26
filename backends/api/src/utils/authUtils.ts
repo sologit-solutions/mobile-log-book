@@ -25,8 +25,9 @@ export const issueJWT = (userId: number): Object => {
     expiresIn: expiresIn,
     algorithm: "HS256",
   });
+
   return {
-    token: "Bearer " + token,
+    token: token,
     expires: expiresIn,
   };
 };
