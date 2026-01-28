@@ -143,6 +143,17 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [currentVessel]);
 
   /**
+   * Save current vessel whenever it changes
+   */
+  useEffect(() => {
+    if (currentVessel) {
+      AsyncStorage.setItem("currentVessel", JSON.stringify(currentVessel));
+    } else {
+      AsyncStorage.removeItem("currentVessel");
+    }
+  }, [currentVessel]);
+
+  /**
    * Resets all user-related state
    * Clears persistent storage
    * Sets app back to offline mode

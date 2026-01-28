@@ -78,6 +78,7 @@ export default function Profile() {
     }, [mode, fetchVessels]);
 
     // --- Handlers ---
+
     const handleLogout = () => {
         void logout();
         router.replace("/");
