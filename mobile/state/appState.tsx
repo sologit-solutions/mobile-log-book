@@ -28,6 +28,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
+import {UserData} from "@/utils/api";
+
 /**
  * Application mode type - represents whether app is used online or offline
  *
@@ -38,8 +40,8 @@ type AppMode = "online" | "offline";
 type AppStateContextType = {
   mode: AppMode;
   setMode: (mode: AppMode) => void;
-  user: string | null;
-  setUser: (user: string | null) => void;
+  user: UserData | null;
+  setUser: (user: UserData | null) => void;
   currentVessel: VesselState;
   setCurrentVessel: (vessel: VesselState) => void;
   logout: () => Promise<void>;
@@ -82,7 +84,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [mode, setMode] = useState<AppMode>("online");
-  const [user, setUser] = useState<string | null>(null);
+  const [user, setUser] = useState<UserData | null>(null);
   const [currentVessel, setCurrentVessel] = useState<VesselState>(null);
 
   /**
@@ -94,12 +96,21 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
       const savedUser = await AsyncStorage.getItem("user");
       const savedVessel = await AsyncStorage.getItem("currentVessel");
       if (savedMode === "offline") setMode("offline");
-      if (savedUser) setUser(savedUser);
+      if (savedUser) {
+        try {
+          setUser(JSON.parse(savedUser));
+        } catch (e) {
+          console.error("Failed to parse user data")
+          console.error(e);
+        }
+      }
+
       if (savedVessel) {
         try {
           setCurrentVessel(JSON.parse(savedVessel));
         } catch (e) {
           console.error("Failed to parse saved vessel");
+          console.error(e);
         }
       }
     })();
@@ -112,14 +123,24 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
     AsyncStorage.setItem("appMode", mode);
   }, [mode]);
 
+  useEffect(() => {
+    if (user) {
+      AsyncStorage.setItem("user", JSON.stringify(user));
+    } else {
+      AsyncStorage.removeItem("user");
+    }
+  }, [user]);
+
   /**
-   * Saves user data when user changes
-   * Removes user data when user logs out
+   * Save current vessel whenever it changes
    */
   useEffect(() => {
-    if (user) AsyncStorage.setItem("user", user);
-    else AsyncStorage.removeItem("user");
-  }, [user]);
+    if (currentVessel) {
+      AsyncStorage.setItem("currentVessel", JSON.stringify(currentVessel));
+    } else {
+      AsyncStorage.removeItem("currentVessel");
+    }
+  }, [currentVessel]);
 
   /**
    * Save current vessel whenever it changes
