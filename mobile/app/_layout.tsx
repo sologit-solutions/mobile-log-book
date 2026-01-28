@@ -79,13 +79,6 @@ function RootLayoutContent() {
                     <Stack.Screen
                         name="index"
                         />
-                    <Stack.Screen
-                        name="modal"
-                        options={{
-                            presentation: "modal",
-                            headerShown: false,
-                        }}
-                        />
                 </Stack>
             </SafeAreaView>
         </SafeAreaProvider>

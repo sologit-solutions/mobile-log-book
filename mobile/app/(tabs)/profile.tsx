@@ -204,7 +204,7 @@ export default function Profile() {
                     <View style={styles.headerContainer}>
                         <Text style={styles.headerText}>Profile</Text>
                         <Text style={styles.subHeaderText}>
-                            Skipper: {mode === "online" ? user : "Offline User"}
+                            Skipper: {user?.name || "Offline User"}
                         </Text>
 
                         {/* Show Current Vessel in Header */}
@@ -247,7 +247,13 @@ export default function Profile() {
                     {/* ------------------------------------------------------------
                       LIST VESSELS MODAL
                      ------------------------------------------------------------ */}
-                    <Modal animationType="slide" transparent={true} visible={listVesselsVisible} onRequestClose={() => setListVesselsVisible(false)}>
+                    <Modal
+                        animationType="fade"
+                        transparent={true}
+                        visible={listVesselsVisible}
+                        onRequestClose={() => setListVesselsVisible(false)}
+                    >
+
                         <TouchableWithoutFeedback onPress={() => setListVesselsVisible(false)}>
                             <View style={styles.modalOverlay}>
                                 <TouchableWithoutFeedback onPress={() => {}}>

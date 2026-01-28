@@ -49,11 +49,11 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
     if (currentDbVersion < 2) {
         await db.execAsync(`
             CREATE TABLE IF NOT EXISTS vessels (
-                                                   id TEXT PRIMARY KEY NOT NULL,
-                                                   name TEXT NOT NULL,
-                                                   type TEXT NOT NULL,
-                                                   registration TEXT,
-                                                   created_at TEXT NOT NULL DEFAULT (datetime('now'))
+               id TEXT PRIMARY KEY NOT NULL,
+               name TEXT NOT NULL,
+               type TEXT NOT NULL,
+               registration TEXT,
+               created_at TEXT NOT NULL DEFAULT (datetime('now'))
             );
         `);
     }

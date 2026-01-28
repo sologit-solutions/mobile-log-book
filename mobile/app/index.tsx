@@ -17,7 +17,7 @@
 import { DARK_THEME } from "@/assets/styles/defaultColors";
 import { useOwnTheme } from "@/context/themeContext";
 import { useAppState } from "@/state/appState";
-import { loginUser } from "@/utils/api";
+import { loginUser, registerUserTemp, registerUser } from "@/utils/api";
 import {Link, useRouter} from "expo-router";
 import React, {JSX, useMemo, useState} from "react";
 import {
@@ -136,14 +136,18 @@ export default function Index(): JSX.Element {
    */
   const handleOfflineMode = async () => {
     setMode("offline");
-    setUser("offline-user");
+    setUser({
+      id: "offline",
+      name: "Offline User",
+      email: "offline@local"
+    });
     //router.push("/(tabs)");
       router.replace("/(tabs)/home");
   };
 
   // --- Sign Up Handlers ---
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     // Basic validation
     if (!signupForm.name || !signupForm.email || !signupForm.password) {
       Alert.alert("Missing Information", "Please fill in all fields.");
@@ -152,6 +156,17 @@ export default function Index(): JSX.Element {
 
     // TODO: Connect to backend registration API here
     console.log("Creating account for:", signupForm);
+    const userData = await registerUserTemp(signupForm.email, signupForm.name, signupForm.password);
+
+    if (userData) {
+      setUser(userData);
+      setMode("online");
+
+      setSignupVisible(false);
+      router.replace("/(tabs)/home");
+    } else {
+      Alert.alert("Error", "Could not create account. Email might be taken.");
+    }
 
     Alert.alert(
         "Success",
