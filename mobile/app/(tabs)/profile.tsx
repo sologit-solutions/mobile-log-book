@@ -15,7 +15,9 @@ import {
     TouchableWithoutFeedback,
     Keyboard,
     FlatList,
-    ActivityIndicator
+    ActivityIndicator,
+    ScrollView,
+    Pressable,
 } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { addVessel, getVessels, deleteVessel } from "@/database/db";
@@ -76,7 +78,6 @@ export default function Profile() {
     }, [mode, fetchVessels]);
 
     // --- Handlers ---
-
     const handleLogout = () => {
         void logout();
         router.replace("/");
@@ -148,6 +149,8 @@ export default function Profile() {
             Alert.alert("Error", "New passwords do not match.");
             return;
         }
+
+        // TODO: Add connection to the backend to handle password change
 
         Alert.alert("Success", "Your password has been updated.", [
             {
@@ -253,10 +256,17 @@ export default function Profile() {
                         visible={listVesselsVisible}
                         onRequestClose={() => setListVesselsVisible(false)}
                     >
+                        <KeyboardAvoidingView
+                            behavior={Platform.OS === "ios" ? "padding" : "height"}
+                            style={styles.modalOverlay}
+                        >
+                            {/* Pressable serves as the backdrop to close the modal */}
+                            <Pressable
+                                style={{ flex: 1, width: '100%', justifyContent: 'center', alignItems: 'center' }}
+                                onPress={() => setListVesselsVisible(false)}
+                            >
 
-                        <TouchableWithoutFeedback onPress={() => setListVesselsVisible(false)}>
-                            <View style={styles.modalOverlay}>
-                                <TouchableWithoutFeedback onPress={() => {}}>
+                                <TouchableWithoutFeedback>
                                     <View style={[styles.modalContent, { maxHeight: '80%' }]}>
                                         <Text style={styles.modalTitle}>Select Active Vessel</Text>
                                         <Text style={styles.modalSubtitle}>Tap to select. Long press to delete.</Text>
@@ -286,8 +296,8 @@ export default function Profile() {
                                         </TouchableOpacity>
                                     </View>
                                 </TouchableWithoutFeedback>
-                            </View>
-                        </TouchableWithoutFeedback>
+                            </Pressable>
+                        </KeyboardAvoidingView>
                     </Modal>
 
 
@@ -300,55 +310,65 @@ export default function Profile() {
                         visible={addVesselVisible}
                         onRequestClose={() => setAddVesselVisible(false)}
                     >
-                        <TouchableWithoutFeedback onPress={() => setAddVesselVisible(false)}>
-                            <View style={styles.modalOverlay}>
-                                <TouchableWithoutFeedback onPress={() => {}}>
-                                    <View style={styles.modalContent}>
-                                        <Text style={styles.modalTitle}>Add New Vessel</Text>
 
-                                        <TextInput
-                                            value={vesselForm.name}
-                                            onChangeText={(text) => setVesselForm({ ...vesselForm, name: text })}
-                                            style={styles.input}
-                                            placeholder="Vessel Name"
-                                            placeholderTextColor={theme.colors.textSecondary}
-                                        />
+                        <KeyboardAvoidingView
+                            behavior={Platform.OS === "ios" ? "padding" : "height"}
+                            style={styles.modalOverlay}
+                        >
+                            <ScrollView
+                                contentContainerStyle={styles.modalScrollContent}
+                                keyboardShouldPersistTaps="handled"
+                                showsVerticalScrollIndicator={false}
+                            >
+                                <Pressable style={styles.innerScrollPressable} onPress={Keyboard.dismiss}>
+                                    <TouchableWithoutFeedback>
+                                        <View style={styles.modalContent}>
+                                            <Text style={styles.modalTitle}>Add New Vessel</Text>
 
-                                        <TextInput
-                                            value={vesselForm.type}
-                                            onChangeText={(text) => setVesselForm({ ...vesselForm, type: text })}
-                                            style={[styles.input, { marginTop: 15 }]}
-                                            placeholder="Type (e.g. Sloop, Motor)"
-                                            placeholderTextColor={theme.colors.textSecondary}
-                                        />
+                                            <TextInput
+                                                value={vesselForm.name}
+                                                onChangeText={(text) => setVesselForm({ ...vesselForm, name: text })}
+                                                style={styles.input}
+                                                placeholder="Vessel Name"
+                                                placeholderTextColor={theme.colors.textSecondary}
+                                            />
 
-                                        <TextInput
-                                            value={vesselForm.registration}
-                                            onChangeText={(text) => setVesselForm({ ...vesselForm, registration: text })}
-                                            style={[styles.input, { marginTop: 15 }]}
-                                            placeholder="Sail / Registration Number"
-                                            placeholderTextColor={theme.colors.textSecondary}
-                                        />
+                                            <TextInput
+                                                value={vesselForm.type}
+                                                onChangeText={(text) => setVesselForm({ ...vesselForm, type: text })}
+                                                style={[styles.input, { marginTop: 15 }]}
+                                                placeholder="Type (e.g. Sloop, Motor)"
+                                                placeholderTextColor={theme.colors.textSecondary}
+                                            />
 
-                                        <View style={styles.modalButtons}>
-                                            <TouchableOpacity
-                                                style={[styles.modalButton, styles.cancelButton]}
-                                                onPress={() => setAddVesselVisible(false)}
-                                            >
-                                                <Text style={styles.cancelButtonText}>Cancel</Text>
-                                            </TouchableOpacity>
+                                            <TextInput
+                                                value={vesselForm.registration}
+                                                onChangeText={(text) => setVesselForm({ ...vesselForm, registration: text })}
+                                                style={[styles.input, { marginTop: 15 }]}
+                                                placeholder="Sail / Registration Number"
+                                                placeholderTextColor={theme.colors.textSecondary}
+                                            />
 
-                                            <TouchableOpacity
-                                                style={[styles.modalButton, styles.saveButton]}
-                                                onPress={handleAddVessel}
-                                            >
-                                                <Text style={styles.saveButtonText}>Add Boat</Text>
-                                            </TouchableOpacity>
+                                            <View style={styles.modalButtons}>
+                                                <TouchableOpacity
+                                                    style={[styles.modalButton, styles.cancelButton]}
+                                                    onPress={() => setAddVesselVisible(false)}
+                                                >
+                                                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                                                </TouchableOpacity>
+
+                                                <TouchableOpacity
+                                                    style={[styles.modalButton, styles.saveButton]}
+                                                    onPress={handleAddVessel}
+                                                >
+                                                    <Text style={styles.saveButtonText}>Add Boat</Text>
+                                                </TouchableOpacity>
+                                            </View>
                                         </View>
-                                    </View>
-                                </TouchableWithoutFeedback>
-                            </View>
-                        </TouchableWithoutFeedback>
+                                    </TouchableWithoutFeedback>
+                                </Pressable>
+                            </ScrollView>
+                        </KeyboardAvoidingView>
                     </Modal>
 
                     {/* ------------------------------------------------------------
@@ -360,64 +380,73 @@ export default function Profile() {
                         visible={changePasswordVisible}
                         onRequestClose={() => setChangePasswordVisible(false)}
                     >
-                        <TouchableWithoutFeedback onPress={() => setChangePasswordVisible(false)}>
-                            <View style={styles.modalOverlay}>
-                                <TouchableWithoutFeedback onPress={() => {}}>
-                                    <View style={styles.modalContent}>
-                                        <Text style={styles.modalTitle}>Change Password</Text>
+                        <KeyboardAvoidingView
+                            behavior={Platform.OS === "ios" ? "padding" : "height"}
+                            style={styles.modalOverlay}
+                        >
+                            <ScrollView
+                                contentContainerStyle={styles.modalScrollContent}
+                                keyboardShouldPersistTaps="handled"
+                                showsVerticalScrollIndicator={false}
+                            >
+                                <Pressable style={styles.innerScrollPressable} onPress={Keyboard.dismiss}>
+                                    <TouchableWithoutFeedback>
+                                        <View style={styles.modalContent}>
+                                            <Text style={styles.modalTitle}>Change Password</Text>
 
-                                        <TextInput
-                                            value={passwordForm.currentPassword}
-                                            onChangeText={(text) =>
-                                                setPasswordForm({ ...passwordForm, currentPassword: text })
-                                            }
-                                            style={styles.input}
-                                            placeholder="Current Password"
-                                            placeholderTextColor={theme.colors.textSecondary}
-                                            secureTextEntry
-                                        />
+                                            <TextInput
+                                                value={passwordForm.currentPassword}
+                                                onChangeText={(text) =>
+                                                    setPasswordForm({ ...passwordForm, currentPassword: text })
+                                                }
+                                                style={styles.input}
+                                                placeholder="Current Password"
+                                                placeholderTextColor={theme.colors.textSecondary}
+                                                secureTextEntry
+                                            />
 
-                                        <TextInput
-                                            value={passwordForm.newPassword}
-                                            onChangeText={(text) =>
-                                                setPasswordForm({ ...passwordForm, newPassword: text })
-                                            }
-                                            style={[styles.input, { marginTop: 15 }]}
-                                            placeholder="New Password"
-                                            placeholderTextColor={theme.colors.textSecondary}
-                                            secureTextEntry
-                                        />
+                                            <TextInput
+                                                value={passwordForm.newPassword}
+                                                onChangeText={(text) =>
+                                                    setPasswordForm({ ...passwordForm, newPassword: text })
+                                                }
+                                                style={[styles.input, { marginTop: 15 }]}
+                                                placeholder="New Password"
+                                                placeholderTextColor={theme.colors.textSecondary}
+                                                secureTextEntry
+                                            />
 
-                                        <TextInput
-                                            value={passwordForm.newPasswordConfirm}
-                                            onChangeText={(text) =>
-                                                setPasswordForm({ ...passwordForm, newPasswordConfirm: text })
-                                            }
-                                            style={[styles.input, { marginTop: 15 }]}
-                                            placeholder="Confirm New Password"
-                                            placeholderTextColor={theme.colors.textSecondary}
-                                            secureTextEntry
-                                        />
+                                            <TextInput
+                                                value={passwordForm.newPasswordConfirm}
+                                                onChangeText={(text) =>
+                                                    setPasswordForm({ ...passwordForm, newPasswordConfirm: text })
+                                                }
+                                                style={[styles.input, { marginTop: 15 }]}
+                                                placeholder="Confirm New Password"
+                                                placeholderTextColor={theme.colors.textSecondary}
+                                                secureTextEntry
+                                            />
 
-                                        <View style={styles.modalButtons}>
-                                            <TouchableOpacity
-                                                style={[styles.modalButton, styles.cancelButton]}
-                                                onPress={() => setChangePasswordVisible(false)}
-                                            >
-                                                <Text style={styles.cancelButtonText}>Cancel</Text>
-                                            </TouchableOpacity>
+                                            <View style={styles.modalButtons}>
+                                                <TouchableOpacity
+                                                    style={[styles.modalButton, styles.cancelButton]}
+                                                    onPress={() => setChangePasswordVisible(false)}
+                                                >
+                                                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                                                </TouchableOpacity>
 
-                                            <TouchableOpacity
-                                                style={[styles.modalButton, styles.saveButton]}
-                                                onPress={handleChangePassword}
-                                            >
-                                                <Text style={styles.saveButtonText}>Save</Text>
-                                            </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    style={[styles.modalButton, styles.saveButton]}
+                                                    onPress={handleChangePassword}
+                                                >
+                                                    <Text style={styles.saveButtonText}>Save</Text>
+                                                </TouchableOpacity>
+                                            </View>
                                         </View>
-                                    </View>
-                                </TouchableWithoutFeedback>
-                            </View>
-                        </TouchableWithoutFeedback>
+                                    </TouchableWithoutFeedback>
+                                </Pressable>
+                            </ScrollView>
+                        </KeyboardAvoidingView>
                     </Modal>
 
                 </View>
@@ -495,12 +524,25 @@ const createStyles = (theme: any) =>
         // --- Modal Styles ---
         modalOverlay: {
             flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
+            width: '100%',
             backgroundColor: "rgba(0, 0, 0, 0.7)",
         },
+        modalScrollContent: {
+            flexGrow: 1,
+            justifyContent: "center",
+            width: '100%',
+        },
+        innerScrollPressable: {
+            flexGrow: 1,
+            width: "100%",
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingVertical: 20
+        },
         modalContent: {
-            width: "85%",
+            width: "90%",
+            maxWidth: 400,
+            alignSelf: 'center',
             backgroundColor: theme.colors.background,
             borderRadius: 20,
             padding: 20,
@@ -522,7 +564,8 @@ const createStyles = (theme: any) =>
         modalSubtitle: {
             fontSize: 14,
             color: theme.colors.textSecondary,
-            marginBottom: 20 },
+            marginBottom: 20
+        },
         input: {
             width: "100%",
             height: 50,
@@ -568,7 +611,7 @@ const createStyles = (theme: any) =>
             fontSize: 16,
         },
 
-        // --- Vessel Card Styles (Mini replica of Event Card) ---
+        // --- Vessel Card Styles ---
         vesselCard: {
             backgroundColor: theme.colors.surface,
             borderRadius: 10,
@@ -576,7 +619,7 @@ const createStyles = (theme: any) =>
             marginBottom: 12,
             width: '100%',
             borderWidth: 1,
-            borderColor: 'transparent', // Default border
+            borderColor: 'transparent',
         },
         selectedCard: {
             borderColor: theme.colors.primary,

@@ -5,12 +5,20 @@
  * @returns Either users username, or if credentials are invalid returns null
  */
 export async function loginUserOld(
-  email: string,
-  password: string
-): Promise<string | null> {
+    email: string,
+    password: string
+): Promise<UserData | null> {
+  // Simulate a short network delay for realism
+  await new Promise(resolve => setTimeout(resolve, 500));
+
   if (email === "eikka@moikka.fi" && password === "moikka") {
-    return "eikka";
+    return {
+      id: "mock-id-eikka",
+      name: "eikka",
+      email: "eikka@moikka.fi"
+    };
   }
+
   return null;
 }
 

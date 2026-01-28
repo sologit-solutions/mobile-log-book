@@ -17,7 +17,7 @@
 import { DARK_THEME } from "@/assets/styles/defaultColors";
 import { useOwnTheme } from "@/context/themeContext";
 import { useAppState } from "@/state/appState";
-import { loginUser, registerUserTemp, registerUser } from "@/utils/api";
+import {loginUser, registerUserTemp, registerUser, loginUserOld} from "@/utils/api";
 import {Link, useRouter} from "expo-router";
 import React, {JSX, useMemo, useState} from "react";
 import {
@@ -33,7 +33,9 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
-  Modal
+  Modal,
+  ScrollView,
+  Pressable,
 } from "react-native";
 
 const PlaceHolderLogo = require("@/assets/images/boat-outline.png");
@@ -62,6 +64,7 @@ export default function Index(): JSX.Element {
     name: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
 
   // Forgot Password Modal State
@@ -105,7 +108,7 @@ export default function Index(): JSX.Element {
    */
   const handleOnlineLogin = async (): Promise<void> => {
     try {
-      const user = await loginUser(form.email, form.password);
+      const user = await loginUserOld(form.email, form.password);
       if (user) {
         setUser(user);
         setMode("online");
@@ -154,6 +157,11 @@ export default function Index(): JSX.Element {
       return;
     }
 
+    if (signupForm.password !== signupForm.confirmPassword) {
+      Alert.alert("Password Error", "Passwords do not match. Please try again.");
+      return;
+    }
+
     // TODO: Connect to backend registration API here
     console.log("Creating account for:", signupForm);
     const userData = await registerUserTemp(signupForm.email, signupForm.name, signupForm.password);
@@ -176,7 +184,7 @@ export default function Index(): JSX.Element {
             text: "OK",
             onPress: () => {
               setSignupVisible(false);
-              setSignupForm({ name: "", email: "", password: "" });
+              setSignupForm({ name: "", email: "", password: "" , confirmPassword: ""});
             }
           }
         ]
@@ -310,63 +318,86 @@ export default function Index(): JSX.Element {
           visible={signupVisible}
           onRequestClose={() => setSignupVisible(false)}
       >
-        {/* Modal Overlay (Semi-transparent background) */}
-        <View style={styles.modalOverlay}>
-          {/* Modal Content Card */}
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Create Account</Text>
+        <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.modalOverlay}
+        >
+          {/* ScrollView allows content to maintain size and scroll if compressed */}
+          <ScrollView
+              contentContainerStyle={styles.modalScrollContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+          >
 
-            {/* Name Input */}
-            <TextInput
-                value={signupForm.name}
-                onChangeText={(text) => setSignupForm({ ...signupForm, name: text })}
-                style={styles.input} // Reusing existing input style
-                placeholder="Name"
-                autoCapitalize="none"
-                autoCorrect={false}
-                placeholderTextColor={theme.textSecondary || "#888"}
-            />
+          {/* Modal Overlay (Semi-transparent background) */}
+            <Pressable style={styles.innerScrollPressable} onPress={Keyboard.dismiss}>
+            {/* Modal Content Card */}
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Create Account</Text>
 
-            {/* Email Input */}
-            <TextInput
-                value={signupForm.email}
-                onChangeText={(text) => setSignupForm({ ...signupForm, email: text })}
-                style={[styles.input, { marginTop: 15 }]}
-                placeholder="Email"
-                placeholderTextColor={theme.textSecondary || "#888"}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-            />
+              {/* Name Input */}
+              <TextInput
+                  value={signupForm.name}
+                  onChangeText={(text) => setSignupForm({ ...signupForm, name: text })}
+                  style={styles.input} // Reusing existing input style
+                  placeholder="Name"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  placeholderTextColor={theme.textSecondary || "#888"}
+              />
 
-            {/* Password Input */}
-            <TextInput
-                value={signupForm.password}
-                onChangeText={(text) => setSignupForm({ ...signupForm, password: text })}
-                style={[styles.input, { marginTop: 15 }]}
-                placeholder="Password"
-                placeholderTextColor={theme.textSecondary || "#888"}
-                secureTextEntry
-            />
+              {/* Email Input */}
+              <TextInput
+                  value={signupForm.email}
+                  onChangeText={(text) => setSignupForm({ ...signupForm, email: text })}
+                  style={[styles.input, { marginTop: 15 }]}
+                  placeholder="Email"
+                  placeholderTextColor={theme.textSecondary || "#888"}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+              />
 
-            {/* Action Buttons */}
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                  style={[styles.modalButton, styles.cancelButton]}
-                  onPress={() => setSignupVisible(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
+              {/* Password Input */}
+              <TextInput
+                  value={signupForm.password}
+                  onChangeText={(text) => setSignupForm({ ...signupForm, password: text })}
+                  style={[styles.input, { marginTop: 15 }]}
+                  placeholder="Password"
+                  placeholderTextColor={theme.textSecondary || "#888"}
+                  secureTextEntry
+              />
 
-              <TouchableOpacity
-                  style={[styles.modalButton, styles.createButton]}
-                  onPress={handleSignup}
-              >
-                <Text style={styles.createButtonText}>Sign Up</Text>
-              </TouchableOpacity>
+              {/* Confirm Password Input */}
+              <TextInput
+                  value={signupForm.confirmPassword}
+                  onChangeText={(text) => setSignupForm({ ...signupForm, confirmPassword: text })}
+                  style={[styles.input, { marginTop: 15 }]}
+                  placeholder="Confirm Password"
+                  placeholderTextColor={theme.textSecondary || "#888"}
+                  secureTextEntry
+              />
+
+              {/* Action Buttons */}
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelButton]}
+                    onPress={() => setSignupVisible(false)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.modalButton, styles.createButton]}
+                    onPress={handleSignup}
+                >
+                  <Text style={styles.createButtonText}>Sign Up</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </View>
+            </Pressable>
+          </ScrollView>
+          </KeyboardAvoidingView>
       </Modal>
 
       {/* ------------------------------------------------------------
@@ -374,46 +405,57 @@ export default function Index(): JSX.Element {
         ------------------------------------------------------------
       */}
       <Modal
-          animationType="fade" // Changed to fade for variety, or use "slide"
+          animationType="fade"
           transparent={true}
           visible={forgotPasswordVisible}
           onRequestClose={() => setForgotPasswordVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Reset Password</Text>
-            <Text style={styles.modalSubtitle}>
-              Enter your email to receive a reset link.
-            </Text>
+        <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.modalOverlay}
+        >
+          <ScrollView
+              contentContainerStyle={styles.modalScrollContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+          >
+            <Pressable style={styles.innerScrollPressable} onPress={Keyboard.dismiss}>
+                <View style={styles.modalContent}>
+                  <Text style={styles.modalTitle}>Reset Password</Text>
+                  <Text style={styles.modalSubtitle}>
+                    Enter your email to receive a reset link.
+                  </Text>
 
-            <TextInput
-                value={resetEmail}
-                onChangeText={setResetEmail}
-                style={styles.input}
-                placeholder="Email"
-                placeholderTextColor={theme.textSecondary || "#888"}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-            />
+                  <TextInput
+                      value={resetEmail}
+                      onChangeText={setResetEmail}
+                      style={styles.input}
+                      placeholder="Email"
+                      placeholderTextColor={theme.textSecondary || "#888"}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                  />
 
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                  style={[styles.modalButton, styles.cancelButton]}
-                  onPress={() => setForgotPasswordVisible(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
+                  <View style={styles.modalButtons}>
+                    <TouchableOpacity
+                        style={[styles.modalButton, styles.cancelButton]}
+                        onPress={() => setForgotPasswordVisible(false)}
+                    >
+                      <Text style={styles.cancelButtonText}>Cancel</Text>
+                    </TouchableOpacity>
 
-              <TouchableOpacity
-                  style={[styles.modalButton, styles.createButton]}
-                  onPress={handleResetPassword}
-              >
-                <Text style={styles.createButtonText}>Send Link</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+                    <TouchableOpacity
+                        style={[styles.modalButton, styles.createButton]}
+                        onPress={handleResetPassword}
+                    >
+                      <Text style={styles.createButtonText}>Send Link</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+            </Pressable>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
     </KeyboardAvoidingView>
   );
@@ -456,6 +498,7 @@ const createStyles = (theme: any) =>
     input: {
       width: "100%",
       height: 50,
+      minHeight: 50,
       backgroundColor: DARK_THEME.surface,
       borderRadius: 8,
       paddingHorizontal: 15,
@@ -511,9 +554,17 @@ const createStyles = (theme: any) =>
     },
     modalOverlay: {
       flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
       backgroundColor: "rgba(0, 0, 0, 0.7)",
+    },
+    modalScrollContent: {
+      flexGrow: 1,
+      justifyContent: "center",
+    },
+    innerScrollPressable: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingVertical: 20
     },
     modalContent: {
       width: "85%",
@@ -528,6 +579,7 @@ const createStyles = (theme: any) =>
       shadowRadius: 4,
       borderWidth: 1,
       borderColor: DARK_THEME.surface,
+      flexGrow: 0
     },
     modalTitle: {
       fontSize: 22,
