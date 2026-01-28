@@ -1,16 +1,17 @@
 model Logbook {
-  id Int @id @default(autoincrement())
-  owner User @relation(fields: [ownerId], references: [id])
-  ownerId Int
+  id String @id @default(uuid())
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
   name String @db.VarChar(64)
   logitems Logitem[]
+  updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 }
 
 model Logitem {
-  id Int @id @default(autoincrement())
-  logbook Logbook @relation(fields: [logbookId], references: [id])
-  logbookId Int
+  id String @id @default(uuid())
+  logbook Logbook @relation(fields: [logbookId], references: [id], onDelete: Cascade)
+  logbookId String
   title String @db.VarChar(64)
   body String? @db.VarChar(1024)
   crew Int?
@@ -21,5 +22,6 @@ model Logitem {
   speedThroughWater Float?
   windSpeed Float?
   barometer Float?
+  updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 }

@@ -7,7 +7,8 @@
     "start:dev": "nodemon --legacy-watch --exec ts-node ./src/app-run.ts",
     "start:prod": "npx prisma migrate deploy && node app-run.js",
     "build": "tsc -p tsconfig.prod.json",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "lint": "npx eslint . --ext .ts"
   },
   "keywords": [],
   "author": "",
@@ -21,8 +22,10 @@
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.3",
+    "morgan": "^1.10.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "winston": "^3.19.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
@@ -30,6 +33,7 @@
     "@tsconfig/node22": "^22.0.2",
     "@types/express": "^5.0.3",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/morgan": "^1.9.10",
     "@types/node": "^24.7.1",
     "@types/passport-jwt": "^4.0.1",
     "eslint": "^9.38.0",

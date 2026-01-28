@@ -2,6 +2,7 @@ import * as repository from "./repository.ts";
 import type { User } from "@prisma/client";
 import * as auth from "../utils/authUtils.ts";
 import emailValidator from "./validators/emailValidator.ts";
+import { ENV } from "../configs/env.ts";
 
 export const createUser = async (
   userdata: Pick<User, "username" | "email"> & { password: string },
@@ -13,7 +14,10 @@ export const createUser = async (
   };
   const result = await repository.createUser(user);
   if (result.success) {
-    return { ...result, data: auth.issueJWT(result.data?.userId) };
+    return {
+      ...result,
+      data: auth.issueJWT(result.data?.userId, ENV.REFRESH_TOKEN_EXPIRES),
+    };
   }
   return result;
 };
@@ -32,11 +36,11 @@ export const authenticate = async (userdata: {
     user = { username: userdata.usernameOrEmail };
     queryResult = await repository.getUserByUsername(user);
   }
-  if (queryResult) {
-    const { hash, ...user } = queryResult;
+  if (queryResult.success) {
+    const { hash, ...user } = queryResult.data;
     const verifyResult = await auth.verifyPassword(userdata.password, hash);
     if (verifyResult) {
-      return auth.issueJWT(user.id);
+      return auth.issueJWT(user.id, ENV.REFRESH_TOKEN_EXPIRES);
     }
   }
 };

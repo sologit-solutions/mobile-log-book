@@ -13,9 +13,7 @@ export const verifyPassword = async (
   return await argon2.verify(hash, password);
 };
 
-export const issueJWT = (userId: number): Object => {
-  const expiresIn = "1d";
-
+export const issueJWT = (userId: string, expiresIn: number): object => {
   const payload = {
     sub: userId,
     iat: Date.now(),

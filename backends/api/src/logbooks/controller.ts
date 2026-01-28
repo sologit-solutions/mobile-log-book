@@ -1,20 +1,29 @@
 import express from "express";
 import * as service from "./service.ts";
+import * as repository from "./repository.ts";
 
 const router = express.Router();
 
 router.get("/", async (req, res) => {
   const userId = req.user?.id;
   if (userId) {
-    return await service.getLogbooks(userId);
+  const serviceResult = await repository.getUserLogbooks(userId);
+  if (serviceResult.success) {
+    return res.json(serviceResult.data);
+  }
+  } else {
+    return res.status(401);
   }
 });
 
 router.post("/", async (req, res) => {
   const userId = req.user?.id;
-  if (userId) {
-    const logbookName = "logbook name";
-    return await service.createLogbook(userId, logbookName);
+  const logbookName = req.body?.name;
+  if (userId && logbookName) {
+    const serviceResult = await repository.createLogbook(userId, logbookName);
+    if (serviceResult.success) {
+      return res.json(serviceResult.data);
+    }
   } else {
     return res.status(401);
   }
@@ -22,9 +31,12 @@ router.post("/", async (req, res) => {
 
 router.get("/:logbook_id", async (req, res) => {
   const userId = req.user?.id;
+  const logbookId = req.params.logbook_id;
   if (userId) {
-    const logbookId = 0;
-    return await service.getLogbook(logbookId);
+    const serviceResult = await repository.getLogbook(userId, logbookId);
+    if (serviceResult.success) {
+      return res.json(serviceResult.data);
+    }
   } else {
     return res.status(401);
   }
@@ -32,10 +44,17 @@ router.get("/:logbook_id", async (req, res) => {
 
 router.put("/:logbook_id", async (req, res) => {
   const userId = req.user?.id;
-  if (userId) {
-    const logbookId = 0;
-    const logbookName = "new_name";
-    return await service.updateLogbook(logbookId, logbookName);
+  const logbookName = req.body?.name;
+  const logbookId = req.params.logbook_id;
+  if (userId && logbookName) {
+    const serviceResult = await repository.updateLogbook(
+      userId,
+      logbookId,
+      logbookName,
+    );
+    if (serviceResult.success) {
+      return res.json(serviceResult.data);
+    }
   } else {
     return res.status(401);
   }
@@ -43,9 +62,12 @@ router.put("/:logbook_id", async (req, res) => {
 
 router.delete("/:logbook_id", async (req, res) => {
   const userId = req.user?.id;
+  const logbookId = req.params.logbook_id;
   if (userId) {
-    const logbookId = 0;
-    return await service.deleteLogbook(logbookId);
+    const serviceResult = await repository.deleteLogbook(userId, logbookId);
+    if (serviceResult.success) {
+      return res.json(serviceResult.data);
+    }
   } else {
     return res.status(401);
   }
@@ -53,9 +75,12 @@ router.delete("/:logbook_id", async (req, res) => {
 
 router.get("/:logbook_id/logs", async (req, res) => {
   const userId = req.user?.id;
+  const logbookId = req.params.logbook_id;
   if (userId) {
-    const logbookId = 0;
-    return await service.getLogbookContent(logbookId);
+    const serviceResult = await repository.getLogitems(userId, logbookId);
+    if (serviceResult.success) {
+      return res.json(serviceResult.data);
+    }
   } else {
     return res.status(401);
   }
@@ -63,9 +88,19 @@ router.get("/:logbook_id/logs", async (req, res) => {
 
 router.post("/:logbook_id/logs", async (req, res) => {
   const userId = req.user?.id;
+  const logitems = req.body?.logitems;
+  const logbookId = req.params.logbook_id;
   if (userId) {
-    const logbookId = 0;
-    return await service.saveLogbookContent(logbookId);
+    if (logitems) {
+      const serviceResult = await service.saveLogitems(
+        userId,
+        logbookId,
+        logitems,
+      );
+      if (serviceResult.success) {
+        return res.json(serviceResult.data);
+      }
+    }
   } else {
     return res.status(401);
   }
@@ -73,9 +108,19 @@ router.post("/:logbook_id/logs", async (req, res) => {
 
 router.put("/:logbook_id/logs/:item_id", async (req, res) => {
   const userId = req.user?.id;
+  const logbookId = req.params.logbook_id;
+  const itemId = req.params.item_id;
+  const logitem = req.body?.item;
   if (userId) {
-    const itemId = 0;
-    return await service.updateLogitem(itemId);
+    const serviceResult = await service.updateLogitem(
+      userId,
+      logbookId,
+      itemId,
+      logitem,
+    );
+    if (serviceResult.success) {
+      return res.json(serviceResult.data);
+    }
   } else {
     return res.status(401);
   }
@@ -83,9 +128,17 @@ router.put("/:logbook_id/logs/:item_id", async (req, res) => {
 
 router.delete("/:logbook_id/logs/:item_id", async (req, res) => {
   const userId = req.user?.id;
+  const logbookId = req.params.logbook_id;
+  const itemId = req.params.item_id;
   if (userId) {
-    const itemId = 0;
-    return await service.deleteLogitem(itemId);
+    const serviceResult = await repository.deleteLogitem(
+      userId,
+      logbookId,
+      itemId,
+    );
+    if (serviceResult.success) {
+      return res.json(serviceResult.data);
+    }
   } else {
     return res.status(401);
   }

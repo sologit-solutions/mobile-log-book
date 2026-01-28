@@ -2,26 +2,9 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../configs/db.ts";
 import type { User } from "@prisma/client";
 
-type CreateUserSuccess = {
-  success: true;
-  data: {
-    userId: number;
-  };
-};
-
-type CreateUserFailure = {
-  success: false;
-  error: {
-    code?: string;
-    message?: string;
-  };
-};
-
-type CreateUserResult = CreateUserSuccess | CreateUserFailure;
-
 export const createUser = async (
   user: Pick<User, "username" | "email" | "hash">,
-): Promise<CreateUserResult> => {
+): Promise<RepositoryResult<{ userId: string }>> => {
   try {
     const data = await prisma.user.create({
       data: user,
@@ -58,24 +41,28 @@ export const createUser = async (
 
 export const getUserByEmail = async (
   user: Partial<Pick<User, "username" | "email">>,
-) => {
+): Promise<RepositoryResult<User>> => {
   try {
-    return await prisma.user.findFirstOrThrow({
+    const result = await prisma.user.findFirstOrThrow({
       where: { email: user.email },
     });
+    return { success: true, data: result };
   } catch (e) {
     // TODO: error handling
+    return { success: false, error: { message: "Unknown error" } };
   }
 };
 
 export const getUserByUsername = async (
   user: Partial<Pick<User, "username" | "email">>,
-) => {
+): Promise<RepositoryResult<User>> => {
   try {
-    return await prisma.user.findFirstOrThrow({
+    const result = await prisma.user.findFirstOrThrow({
       where: { username: user.username },
     });
+    return { success: true, data: result };
   } catch (e) {
     // TODO: error handling
+    return { success: false, error: { message: "Unknown error" } };
   }
 };

@@ -1,24 +1,19 @@
 import passport from "passport";
-import {
-  Strategy as JwtStrategy,
-  ExtractJwt,
-  StrategyOptions,
-  VerifiedCallback,
-} from "passport-jwt";
+import passportJwt from "passport-jwt";
+import type { StrategyOptions, VerifiedCallback } from "passport-jwt";
 import { prisma } from "./db.ts";
 import { ENV } from "../configs/env.ts";
 
-var opt: StrategyOptions = {
+const { Strategy: JwtStrategy, ExtractJwt } = passportJwt;
+
+const opt: StrategyOptions = {
   jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
   secretOrKey: ENV.JWT_SECRET,
   algorithms: ["HS256"],
-  jsonWebTokenOptions: {
-    maxAge: "1d",
-  },
 };
 
 passport.use(
-  new JwtStrategy(opt, async (payload: any, done: VerifiedCallback) => {
+  new JwtStrategy(opt, async (payload, done: VerifiedCallback) => {
     try {
       const user = await prisma.user.findUnique({
         where: { id: payload.sub },
