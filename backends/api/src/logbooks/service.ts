@@ -1,5 +1,5 @@
 import * as repository from "./repository.ts";
-import type { Logitem } from "@prisma/client";
+import type { Logitem } from "../types/logitem.ts";
 
 export const saveLogitems = async (
   userId: string,
@@ -18,6 +18,7 @@ export const saveLogitems = async (
     logbookId,
     logitems,
   );
+
   return repositoryResult;
 };
 

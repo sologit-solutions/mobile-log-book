@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../configs/db.ts";
-import type { User } from "@prisma/client";
+import type { User } from "../types/user.ts";
 
 export const createUser = async (
   user: Pick<User, "username" | "email" | "hash">,
@@ -9,32 +9,37 @@ export const createUser = async (
     const data = await prisma.user.create({
       data: user,
     });
+
     return { success: true, data: { userId: data.id } };
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError) {
-      if (e.code === "P2002") {
-        const target = e.meta?.target as string[];
-        if (target[0] === "username") {
-          return {
-            success: false,
-            error: {
-              code: e.code,
-              message: "This username is already in use.",
-            },
-          };
-        }
-        if (target[0] === "email") {
-          return {
-            success: false,
-            error: {
-              code: e.code,
-              message: "This email address is already in use.",
-            },
-          };
-        }
+      if (e.code !== "P2002") {
+        return { success: false, error: { code: e.code } };
       }
-      return { success: false, error: { code: e.code } };
+
+      const target = e.meta?.target as string[];
+
+      if (target[0] === "username") {
+        return {
+          success: false,
+          error: {
+            code: e.code,
+            message: "This username is already in use.",
+          },
+        };
+      }
+
+      if (target[0] === "email") {
+        return {
+          success: false,
+          error: {
+            code: e.code,
+            message: "This email address is already in use.",
+          },
+        };
+      }
     }
+
     return { success: false, error: { message: "Unknown error" } };
   }
 };
@@ -46,6 +51,7 @@ export const getUserByEmail = async (
     const result = await prisma.user.findFirstOrThrow({
       where: { email: user.email },
     });
+
     return { success: true, data: result };
   } catch (e) {
     // TODO: error handling
@@ -60,6 +66,7 @@ export const getUserByUsername = async (
     const result = await prisma.user.findFirstOrThrow({
       where: { username: user.username },
     });
+
     return { success: true, data: result };
   } catch (e) {
     // TODO: error handling

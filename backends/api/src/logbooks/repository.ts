@@ -1,5 +1,6 @@
 import { prisma } from "../configs/db.ts";
-import type { Logbook, Logitem } from "@prisma/client";
+import type { Logbook } from "../types/logbook.ts";
+import type { Logitem } from "../types/logitem.ts";
 
 export const getUserLogbooks = async (
   userId: string,
@@ -10,6 +11,7 @@ export const getUserLogbooks = async (
         ownerId: userId,
       },
     });
+
     return { success: true, data: result };
   } catch (e) {
     return { success: false, error: { message: "Unknown error" } };
@@ -27,6 +29,7 @@ export const createLogbook = async (
         name: name,
       },
     });
+
     return { success: true, data: result };
   } catch (e) {
     return { success: false, error: { message: "Unknown error" } };
@@ -44,6 +47,7 @@ export const getLogbook = async (
         ownerId: userId,
       },
     });
+
     return { success: true, data: result };
   } catch (e) {
     return { success: false, error: { message: "Unknown error" } };
@@ -65,6 +69,7 @@ export const updateLogbook = async (
         name: logbookName,
       },
     });
+
     return { success: true, data: result };
   } catch (e) {
     return { success: false, error: { message: "Unknown error" } };
@@ -82,6 +87,7 @@ export const deleteLogbook = async (
         ownerId: userId,
       },
     });
+
     return { success: true, data: result };
   } catch (e) {
     return { success: false, error: { message: "Unknown error" } };
@@ -101,6 +107,7 @@ export const getLogitems = async (
         },
       },
     });
+
     return { success: true, data: result };
   } catch (e) {
     return { success: false, error: { message: "Unknown error" } };
@@ -143,6 +150,7 @@ export const updateLogitem = async (
       },
       data: logitem,
     });
+
     return { success: true, data: result };
   } catch (e) {
     return { success: false, error: { message: "Unknown error" } };
@@ -164,6 +172,7 @@ export const deleteLogitem = async (
         },
       },
     });
+
     return { success: true, data: result };
   } catch (e) {
     return { success: false, error: { message: "Unknown error" } };
