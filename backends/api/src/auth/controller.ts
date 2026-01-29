@@ -1,7 +1,7 @@
 import express from "express";
 import * as service from "./service.ts";
-import signupValidator from "../validators/signupValidator.ts";
-import loginValidator from "../validators/loginValidator.ts";
+import signupValidator from "./validators/signupValidator.ts";
+import loginValidator from "./validators/loginValidator.ts";
 
 const router = express.Router();
 

@@ -1,7 +1,7 @@
 import * as repository from "./repository.ts";
 import type { User } from "./../types/user.ts";
 import * as auth from "../utils/authUtils.ts";
-import emailValidator from "../validators/emailValidator.ts";
+import emailValidator from "./validators/emailValidator.ts";
 import { ENV } from "../configs/env.ts";
 
 export const createUser = async (
