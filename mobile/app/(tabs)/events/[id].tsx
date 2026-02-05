@@ -1,333 +1,235 @@
-import { useLocalSearchParams, Stack, useRouter } from "expo-router";
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
-import { useOwnTheme } from "@/context/themeContext";
-import React, { useMemo, useState, useEffect } from "react";
-import {deleteLog, getLogById, updateLog} from "@/database/db";
-import {useSQLiteContext} from "expo-sqlite";
-
-interface Log {
-    id: string;
-    entry: string;
-    latitude: number;
-    longitude: number;
-    timestamp: string;
-    vessel_name?: string | null;
-}
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, Alert, Platform, TouchableOpacity, ScrollView, KeyboardAvoidingView } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { Screen } from "@/src/components/Screen";
+import { Button } from "@/src/components/Button";
+import { Input } from "@/src/components/Input";
+import { Card } from "@/src/components/Card";
+import { useOwnTheme } from "@/src/context/ThemeContext";
+import { useLog, useUpdateLog, useDeleteLog } from "@/src/features/logbook/hooks";
 
 export default function EventDetail() {
-    // Grab the ID from the URL
     const { id } = useLocalSearchParams();
+    const logId = Array.isArray(id) ? id[0] : id;
+
     const { theme } = useOwnTheme();
-
-    const styles = useMemo(() => createStyles(theme), [theme]);
     const router = useRouter();
-    const db = useSQLiteContext()
 
-    const [log, setLog] = useState<Log | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [inputText, setInputText] = useState("");
-    const [isSaving, setIsSaving] = useState(false);
+    // Data Hooks
+    const { data: log, isLoading } = useLog(logId!);
+    const updateMutation = useUpdateLog();
+    const deleteMutation = useDeleteLog();
 
+    const [entryText, setEntryText] = useState("");
+
+    // Sync state when data loads
     useEffect(() => {
-        const fetchLog = async () => {
-            if (!id) return;
-            try {
-                const logId = Array.isArray(id) ? id : [id];
-                const result = await getLogById(db, logId.toString());
+        if (log) setEntryText(log.entry);
+    }, [log]);
 
-                if (result) {
-                    setLog(result as Log);
-                    setInputText((result as Log).entry);
-                } else {
-                    Alert.alert("Error", "Log event not found");
-                    router.back()
+    const handleUpdate = () => {
+        if (!logId) return;
+        updateMutation.mutate(
+            { id: logId, entry: entryText },
+            {
+                onSuccess: () => {
+                    Alert.alert("Success", "Updated successfully");
+                    router.back();
                 }
-            } catch (error) {
-                console.error(error);
-                Alert.alert("Error", "Failed to load event");
-            } finally {
-                setLoading(false);
             }
-        };
+        );
+    };
 
-        void fetchLog();
-    }, [id, db, router])
-
-    const handleUpdate = async () => {
-
-        if (!log) return;
-        setIsSaving(true);
-
-        try {
-            await updateLog(db, log.id, inputText);
-            Alert.alert("Success", "Log event successfully updated");
-            router.back()
-        } catch (error) {
-            console.error(error);
-            Alert.alert("Error", "Failed to update event");
-        } finally {
-            setIsSaving(false);
-        }
-    }
-
-    const handleDelete = async () => {
-        if (!log) return;
-
-        Alert.alert(
-            "Delete event",
-            "Are you sure to delete this log event",
-            [
-                {text: "Cancel", style: "cancel"},
-                {
-                    text: "Delete",
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            await deleteLog(db, log.id.toString());
-                            router.back()
-                        } catch (error) {
-                            console.error(error);
-                            Alert.alert("Error", "Failed to delete event");
-                        }
-                    }
+    const handleDelete = () => {
+        if (!logId) return;
+        Alert.alert("Confirm", "Delete this event?", [
+            { text: "Cancel", style: "cancel" },
+            {
+                text: "Delete",
+                style: "destructive",
+                onPress: () => {
+                    deleteMutation.mutate(logId, {
+                        onSuccess: () => router.back()
+                    });
                 }
-            ]
-        )
+            }
+        ]);
+    };
+
+    if (isLoading || !log) {
+        return (
+            <Screen style={{ justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={{ color: theme.colors.textPrimary }}>Loading...</Text>
+            </Screen>
+        );
     }
 
-    if (loading) {
-        return (
-            <View style={[styles.container, {justifyContent: 'center', alignItems: 'center'}]}>
-                <ActivityIndicator size="large" color={theme.colors.textPrimary}/>
-            </View>
-        )
-    }
+    const dateObj = new Date(log.timestamp);
 
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={{flex: 1, backgroundColor: theme.colors.background}}
-        >
-            <View style={styles.container}>
+        <Screen style={{ flex: 1 }}>
 
-                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                    <Text style={styles.buttonText}>Back</Text>
-                </TouchableOpacity>
+            {/* --- TOP LEFT BACK BUTTON --- */}
+            <TouchableOpacity
+                onPress={() => router.back()}
+                style={[styles.headerBtn, styles.headerBackBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.textSecondary, borderWidth: 1 }]}
+            >
+                <Text style={{ color: theme.colors.textPrimary, fontWeight: '600', fontSize: 14 }}>Back</Text>
+            </TouchableOpacity>
 
-                <View style={styles.contentContainer}>
-                    <Text style={styles.headerTitle}>Edit Event</Text>
+            {/* --- TOP RIGHT DELETE BUTTON --- */}
+            <TouchableOpacity
+                onPress={handleDelete}
+                style={[styles.headerBtn, styles.headerDeleteBtn, { backgroundColor: theme.colors.danger }]}
+            >
+                <Text style={styles.btnTextWhite}>Delete</Text>
+            </TouchableOpacity>
 
-                    <View style={styles.card}>
-                        <View style={styles.row}>
-                            <Text style={styles.label}>Vessel</Text>
-                            <Text style={[styles.value, { color: theme.colors.primary, fontWeight: 'bold' }]}>
-                                {log?.vessel_name || "-"}
-                            </Text>
-                        </View>
-                        <View style={styles.row}>
-                            <Text style={styles.label}>Date</Text>
-                            <Text style={styles.value}>
-                                {log ? new Date(log.timestamp).toLocaleDateString() : "-"}
-                            </Text>
-                        </View>
-                        <View style={styles.row}>
-                            <Text style={styles.label}>Time</Text>
-                            <Text style={styles.value}>
-                                {log ? new Date(log.timestamp).toLocaleTimeString() : "-"}
-                            </Text>
-                        </View>
+            {/* Header Title (Fixed at top) */}
+            <View style={styles.header}>
+                <Text style={[styles.title, { color: theme.colors.textPrimary }]}>Edit Event</Text>
+            </View>
 
-                        {/*TODO: Show if N/S and if E/S*/}
-                        <View style={[styles.coordSection, { borderBottomWidth: 0 }]}>
-                            <Text style={[styles.label, { marginBottom: 8 }]}>Coordinates</Text>
+            {/* --- SCROLLABLE CONTENT --- */}
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                style={{ flex: 1 }}
+            >
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                >
+                    <Card style={styles.infoCard}>
+                        <InfoRow label="Vessel" value={log.vessel_name || "-"} />
+                        <InfoRow label="Date" value={dateObj.toLocaleDateString()} />
+                        <InfoRow label="Time" value={dateObj.toLocaleTimeString()} />
+                        <InfoRow label="Latitude" value={log.latitude.toFixed(6)} font="mono" />
+                        <InfoRow label="Longitude" value={log.longitude.toFixed(6)} font="mono" />
+                    </Card>
 
-                            <View style={styles.coordRow}>
-                                <Text style={styles.coordLabel}>Lat:</Text>
-                                <Text style={styles.valueCoord}>
-                                    {log
-                                        ? `${Math.abs(log.latitude).toFixed(8)}°${log.latitude >= 0 ? "N" : "S"}`
-                                        : "-"}
-                                </Text>
-                            </View>
-
-                            <View style={styles.coordRow}>
-                                <Text style={styles.coordLabel}>Lon:</Text>
-                                <Text style={styles.valueCoord}>
-                                    {log
-                                        ? `${Math.abs(log.longitude).toFixed(8)}°${log.longitude >= 0 ? "E" : "W"}`
-                                        : "-"}
-                                </Text>
-                            </View>
-                        </View>
-                    </View>
-
-                    <Text style={styles.inputLabel}>Activity Name</Text>
-                    <TextInput
-                        style={styles.input}
-                        value={inputText}
-                        onChangeText={setInputText}
-                        placeholder="Activity description"
-                        placeholderTextColor={theme.colors.textSecondary}
+                    <Input
+                        label="Activity Title"
+                        value={entryText}
+                        onChangeText={setEntryText}
+                        style={{ height: 55 }}
                     />
 
-                    <View style={styles.buttonContainer}>
-                        <TouchableOpacity
-                            style={styles.actionButton}
-                            onPress={handleUpdate}
-                            disabled={isSaving}
-                        >
-                            {isSaving ? (
-                                <ActivityIndicator color={theme.colors.textPrimary} />
-                            ) : (
-                                <Text style={styles.actionButtonText}>Save Changes</Text>
-                            )}
-                        </TouchableOpacity>
+                    {/* Spacer to ensure content isn't hidden behind the floating button */}
+                    <View style={styles.bottomSpacer} />
+                </ScrollView>
+            </KeyboardAvoidingView>
 
-                        <TouchableOpacity
-                            style={[styles.actionButton, styles.deleteButton]}
-                            onPress={handleDelete}
-                            disabled={isSaving}
-                        >
-                            <Text style={[styles.actionButtonText, styles.deleteText]}>Delete Event</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
+            {/* --- STICKY BOTTOM BUTTON --- */}
+            <View style={styles.stickyFooter}>
+                <Button
+                    title="Save Changes"
+                    onPress={handleUpdate}
+                    loading={updateMutation.isPending}
+                    style={styles.saveBtn}
+                />
             </View>
-        </KeyboardAvoidingView>
+        </Screen>
     );
 }
 
-const createStyles = (theme: any) =>
-    StyleSheet.create({
-        container: {
-            flex: 1,
-            backgroundColor: theme.colors.background,
-        },
-        contentContainer: {
-            padding: 20,
-            paddingTop: 70,
-        },
-        backButton: {
-            position: "absolute",
-            top: 20,
-            left: 20,
-            backgroundColor: theme.colors.surface,
-            paddingVertical: 10,
-            paddingHorizontal: 20,
-            borderRadius: 8,
-            zIndex: 10,
-            elevation: 3,
-            shadowColor: "#000",
-            shadowOpacity: 0.15,
-            shadowOffset: { width: 0, height: 2 },
-            shadowRadius: 4,
-        },
-        buttonText: {
-            color: theme.colors.textPrimary,
-            fontSize: 16,
-            fontWeight: "600",
-        },
-        headerTitle: {
-            fontSize: 28,
-            fontWeight: "bold",
-            color: theme.colors.textPrimary,
-            marginBottom: 20,
-            marginTop: 10,
-        },
-        card: {
-            backgroundColor: theme.colors.surface,
-            borderRadius: 10,
-            padding: 12,
-            marginBottom: 24,
-            elevation: 3,
-            shadowColor: "#000",
-            shadowOpacity: 0.15,
-            shadowOffset: { width: 0, height: 2 },
-            shadowRadius: 4,
-        },
-        row: {
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            paddingVertical: 9,
-            borderBottomWidth: 1,
-            borderBottomColor: theme.colors.background,
-        },
-        coordSection: {
-            paddingVertical: 12,
-        },
-        coordRow: {
-            flexDirection: "row",
-            justifyContent: "space-between",
-            paddingVertical: 4,
-            paddingLeft: 10,
-        },
-        coordLabel: {
-            fontSize: 14,
-            color: theme.colors.textSecondary,
-            fontWeight: "500",
-        },
-        label: {
-            fontSize: 14,
-            color: theme.colors.textSecondary,
-            fontWeight: "600",
-        },
-        value: {
-            fontSize: 16,
-            color: theme.colors.textPrimary,
-            fontWeight: "500",
-        },
-        valueCoord: {
-            fontSize: 15,
-            color: theme.colors.textPrimary,
-            fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-        },
-        inputLabel: {
-            fontSize: 16,
-            fontWeight: "600",
-            color: theme.colors.textPrimary,
-            marginBottom: 10,
-            marginLeft: 4,
-        },
-        input: {
-            width: "100%",
-            height: 50,
-            backgroundColor: theme.colors.surface,
-            borderRadius: 8,
-            paddingHorizontal: 15,
-            fontSize: 16,
-            color: theme.colors.textPrimary,
-            marginBottom: 30,
-            borderWidth: 1,
-            borderColor: theme.colors.surface,
-        },
-        buttonContainer: {
-            gap: 15,
-        },
-        actionButton: {
-            backgroundColor: theme.colors.surface,
-            paddingVertical: 15,
-            borderRadius: 10,
-            alignItems: "center",
-            justifyContent: "center",
-            elevation: 3,
-            shadowColor: "#000",
-            shadowOpacity: 0.15,
-            shadowOffset: { width: 0, height: 2 },
-            shadowRadius: 4,
-        },
-        actionButtonText: {
-            color: theme.colors.textPrimary,
-            fontSize: 16,
-            fontWeight: "600",
-        },
-        deleteButton: {
-            marginTop: 10,
-            backgroundColor: theme.colors.background,
-            borderWidth: 1,
-            borderColor: "red",
-        },
-        deleteText: {
-            color: "red",
-        }
-    });
+const InfoRow = ({ label, value, font }: { label: string, value: string, font?: 'mono' }) => {
+    const { theme } = useOwnTheme();
+    return (
+        <View style={styles.row}>
+            <Text style={[styles.label, { color: theme.colors.textSecondary }]}>{label}</Text>
+            <Text style={[
+                styles.value,
+                { color: theme.colors.textPrimary },
+                font === 'mono' && styles.mono
+            ]}>
+                {value}
+            </Text>
+        </View>
+    );
+};
+
+const styles = StyleSheet.create({
+    // SHARED BUTTON STYLES
+    headerBtn: {
+        position: 'absolute',
+        top: 0,
+        paddingVertical: 8,
+        paddingHorizontal: 15,
+        borderRadius: 20,
+        zIndex: 10,
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+    },
+    headerBackBtn: {
+        left: 15,
+    },
+    headerDeleteBtn: {
+        right: 15,
+    },
+    btnTextWhite: {
+        color: 'white',
+        fontWeight: '600',
+        fontSize: 14,
+    },
+    header: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 10,
+        marginTop: 10,
+        marginBottom: 10, // Reduced bottom margin
+    },
+    title: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    // SCROLL STYLES
+    scrollContent: {
+        paddingHorizontal: 20,
+        paddingTop: 10,
+    },
+    bottomSpacer: {
+        height: 100, // Provides space for the floating button
+    },
+    infoCard: {
+        marginBottom: 25,
+    },
+    row: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingVertical: 8,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: '#ccc',
+    },
+    label: {
+        fontSize: 14,
+    },
+    value: {
+        fontSize: 15,
+        fontWeight: '500',
+    },
+    mono: {
+        fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    },
+    // FLOATING FOOTER STYLES
+    stickyFooter: {
+        position: 'absolute',
+        bottom: 80, // Distance from bottom of screen
+        left: 20,
+        right: 20,
+        zIndex: 20, // Ensures it overlays content
+    },
+    saveBtn: {
+        height: 55,
+        width: '100%',
+        justifyContent: 'center',
+        elevation: 5, // Shadow for Android
+        shadowColor: "#000", // Shadow for iOS
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4.65,
+    }
+});

@@ -36,6 +36,8 @@ export const DARK_THEME = {
   statusBar: COLORS.STATUS_BAR_DARK,
   safeArea: COLORS.SAFE_AREA_DARK,
   header: COLORS.HEADER_DARK,
+  danger: COLORS.DANGER,
+  logo: COLORS.TEXT_PRIMARY
 };
 
 export const LIGHT_THEME = {
@@ -47,4 +49,6 @@ export const LIGHT_THEME = {
   statusBar: COLORS.STATUS_BAR_LIGHT,
   safeArea: COLORS.SAFE_AREA_LIGHT,
   header: COLORS.HEADER_LIGHT,
+  danger: COLORS.DANGER,
+  logo: COLORS.TEXT_PRIMARY_LIGHT
 };

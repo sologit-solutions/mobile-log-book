@@ -28,7 +28,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-import {UserData} from "@/utils/api";
+import {UserData} from "@/src/utils/api";
 
 /**
  * Application mode type - represents whether app is used online or offline
