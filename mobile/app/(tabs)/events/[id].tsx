@@ -4,7 +4,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Screen } from "@/src/components/Screen";
 import { Button } from "@/src/components/Button";
 import { Input } from "@/src/components/Input";
-import { Card } from "@/src/components/Card";
 import { useOwnTheme } from "@/src/context/ThemeContext";
 import { useLog, useUpdateLog, useDeleteLog } from "@/src/features/logbook/hooks";
 
@@ -20,21 +19,72 @@ export default function EventDetail() {
     const updateMutation = useUpdateLog();
     const deleteMutation = useDeleteLog();
 
+    // Form State
     const [entryText, setEntryText] = useState("");
+    const [dateStr, setDateStr] = useState("");
+    const [timeStr, setTimeStr] = useState("");
+    const [latStr, setLatStr] = useState("");
+    const [lonStr, setLonStr] = useState("");
 
     // Sync state when data loads
     useEffect(() => {
-        if (log) setEntryText(log.entry);
+        if (log) {
+            setEntryText(log.entry);
+            const d = new Date(log.timestamp);
+
+            // Format to YYYY-MM-DD
+            // simple trick: use ISO string and split it
+            const isoDate = d.toISOString().split('T')[0];
+            setDateStr(isoDate);
+
+            // Format to HH:mm
+            // extract the first 5 chars of the time part (e.g., "14:30")
+            const isoTime = d.toTimeString().slice(0, 5);
+            setTimeStr(isoTime);
+
+            setLatStr(String(log.latitude));
+            setLonStr(String(log.longitude));
+        }
     }, [log]);
 
     const handleUpdate = () => {
         if (!logId) return;
+
+        // 1. Validate & Parse Date/Time
+        // Construct a standard ISO-like string: "2026-02-05T14:30:00"
+        const combinedString = `${dateStr}T${timeStr}:00`;
+        const newTimestamp = new Date(combinedString);
+
+        if (isNaN(newTimestamp.getTime())) {
+            Alert.alert("Invalid Date/Time", "Please use YYYY-MM-DD for date and HH:MM for time.");
+            return;
+        }
+
+        // 2. Validate & Parse Location
+        const newLat = parseFloat(latStr);
+        const newLon = parseFloat(lonStr);
+
+        if (isNaN(newLat) || isNaN(newLon)) {
+            Alert.alert("Invalid Location", "Latitude and Longitude must be numbers.");
+            return;
+        }
+
+        // 3. Send Update
         updateMutation.mutate(
-            { id: logId, entry: entryText },
+            {
+                id: logId,
+                entry: entryText,
+                timestamp: newTimestamp.toISOString(),
+                lat: newLat,
+                lon: newLon
+            },
             {
                 onSuccess: () => {
                     Alert.alert("Success", "Updated successfully");
                     router.back();
+                },
+                onError: () => {
+                    Alert.alert("Error", "Failed to update event.");
                 }
             }
         );
@@ -63,8 +113,6 @@ export default function EventDetail() {
             </Screen>
         );
     }
-
-    const dateObj = new Date(log.timestamp);
 
     return (
         <Screen style={{ flex: 1 }}>
@@ -99,13 +147,51 @@ export default function EventDetail() {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    <Card style={styles.infoCard}>
-                        <InfoRow label="Vessel" value={log.vessel_name || "-"} />
-                        <InfoRow label="Date" value={dateObj.toLocaleDateString()} />
-                        <InfoRow label="Time" value={dateObj.toLocaleTimeString()} />
-                        <InfoRow label="Latitude" value={log.latitude.toFixed(6)} font="mono" />
-                        <InfoRow label="Longitude" value={log.longitude.toFixed(6)} font="mono" />
-                    </Card>
+                    {/* Vessel Name (Read Only) */}
+                    <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Vessel</Text>
+                    <View style={[styles.readOnlyField, { backgroundColor: theme.colors.surface, borderColor: theme.colors.surface }]}>
+                        <Text style={{ color: theme.colors.textPrimary, fontSize: 16 }}>{log.vessel_name || "Unknown Vessel"}</Text>
+                    </View>
+
+                    {/* Date & Time Row */}
+                    <View style={styles.row}>
+                        <View style={{ flex: 1, marginRight: 10 }}>
+                            <Input
+                                label="Date"
+                                value={dateStr}
+                                onChangeText={setDateStr}
+                                placeholder="YYYY-MM-DD" // Updated placeholder
+                            />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Input
+                                label="Time"
+                                value={timeStr}
+                                onChangeText={setTimeStr}
+                                placeholder="HH:MM" // Updated placeholder
+                            />
+                        </View>
+                    </View>
+
+                    {/* Lat & Lon Row */}
+                    <View style={styles.row}>
+                        <View style={{ flex: 1, marginRight: 10 }}>
+                            <Input
+                                label="Latitude"
+                                value={latStr}
+                                onChangeText={setLatStr}
+                                keyboardType="numeric"
+                            />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Input
+                                label="Longitude"
+                                value={lonStr}
+                                onChangeText={setLonStr}
+                                keyboardType="numeric"
+                            />
+                        </View>
+                    </View>
 
                     <Input
                         label="Activity Title"
@@ -114,7 +200,7 @@ export default function EventDetail() {
                         style={{ height: 55 }}
                     />
 
-                    {/* Spacer to ensure content isn't hidden behind the floating button */}
+                    {/* Spacer increased to ensure content isn't hidden behind the floating button */}
                     <View style={styles.bottomSpacer} />
                 </ScrollView>
             </KeyboardAvoidingView>
@@ -131,22 +217,6 @@ export default function EventDetail() {
         </Screen>
     );
 }
-
-const InfoRow = ({ label, value, font }: { label: string, value: string, font?: 'mono' }) => {
-    const { theme } = useOwnTheme();
-    return (
-        <View style={styles.row}>
-            <Text style={[styles.label, { color: theme.colors.textSecondary }]}>{label}</Text>
-            <Text style={[
-                styles.value,
-                { color: theme.colors.textPrimary },
-                font === 'mono' && styles.mono
-            ]}>
-                {value}
-            </Text>
-        </View>
-    );
-};
 
 const styles = StyleSheet.create({
     // SHARED BUTTON STYLES
@@ -179,7 +249,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingVertical: 10,
         marginTop: 10,
-        marginBottom: 10, // Reduced bottom margin
+        marginBottom: 10,
     },
     title: {
         fontSize: 20,
@@ -192,42 +262,38 @@ const styles = StyleSheet.create({
         paddingTop: 10,
     },
     bottomSpacer: {
-        height: 100, // Provides space for the floating button
+        height: 160,
     },
-    infoCard: {
-        marginBottom: 25,
+    sectionLabel: {
+        fontSize: 14,
+        marginBottom: 8,
+        fontWeight: '600',
+    },
+    readOnlyField: {
+        padding: 15,
+        borderRadius: 12,
+        borderWidth: 1,
+        marginBottom: 15,
     },
     row: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingVertical: 8,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: '#ccc',
-    },
-    label: {
-        fontSize: 14,
-    },
-    value: {
-        fontSize: 15,
-        fontWeight: '500',
-    },
-    mono: {
-        fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+        // inputs inside row handle their own margins usually, but we ensure structure here
     },
     // FLOATING FOOTER STYLES
     stickyFooter: {
         position: 'absolute',
-        bottom: 80, // Distance from bottom of screen
+        bottom: 100,
         left: 20,
         right: 20,
-        zIndex: 20, // Ensures it overlays content
+        zIndex: 20,
     },
     saveBtn: {
         height: 55,
         width: '100%',
         justifyContent: 'center',
-        elevation: 5, // Shadow for Android
-        shadowColor: "#000", // Shadow for iOS
+        elevation: 5,
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 4.65,

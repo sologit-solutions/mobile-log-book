@@ -62,9 +62,28 @@ export async function getLogById(db: SQLiteDatabase, id: string): Promise<DBLog 
     );
 }
 
-export async function updateLog(db: SQLiteDatabase, id: string, entry: string): Promise<void> {
-    await db.runAsync(`UPDATE logs SET entry = ? WHERE id = ?`, entry, id);
-}
+export const updateLog = async (
+    db: any,
+    id: string | number,
+    entry: string,
+    timestamp?: string,
+    lat?: number,
+    lon?: number
+) => {
+    // If we have the extra data, update everything.
+    if (timestamp !== undefined && lat !== undefined && lon !== undefined) {
+        return await db.runAsync(
+            'UPDATE logs SET entry = ?, timestamp = ?, latitude = ?, longitude = ? WHERE id = ?',
+            [entry, timestamp, lat, lon, id]
+        );
+    } else {
+        // Fallback: only update the text entry (legacy behavior)
+        return await db.runAsync(
+            'UPDATE logs SET entry = ? WHERE id = ?',
+            [entry, id]
+        );
+    }
+};
 
 export async function deleteLog(db: SQLiteDatabase, id: string): Promise<void> {
     await db.runAsync(`DELETE FROM logs WHERE id = ?`, id);

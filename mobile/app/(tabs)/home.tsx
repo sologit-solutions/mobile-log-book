@@ -1,116 +1,152 @@
-import React from "react";
-import { StyleSheet, Text, View, Alert, ViewStyle } from "react-native";
-import { useOwnTheme } from "@/src/context/ThemeContext";
+import React, { useState } from "react";
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, FlatList, Alert } from "react-native";
 import { Screen } from "@/src/components/Screen";
-import { Button } from "@/src/components/Button";
-import { getCurrentLocation } from "@/src/utils/location";
-import { useAddLog } from "@/src/features/logbook/hooks";
+import { useOwnTheme } from "@/src/context/ThemeContext";
+import { useAuthStore } from "@/src/store/authStore";
 import { useVesselStore } from "@/src/store/vesselStore";
+import { useButtonStore } from "@/src/store/buttonStore"; // <--- Import Store
+import { useRouter } from "expo-router";
+import { useAddLog } from "@/src/features/logbook/hooks";
+import * as Location from 'expo-location';
 
-export default function AddActivity() {
+export default function Home() {
     const { theme } = useOwnTheme();
+    const router = useRouter();
+    const { user } = useAuthStore();
     const { currentVessel } = useVesselStore();
-
-    // 1. Use the mutation hook
+    const { buttons } = useButtonStore(); // <--- Get dynamic buttons
     const addLogMutation = useAddLog();
 
-    const handleLogAction = async (label: string) => {
-        try {
-            // 2. We still handle location manually here, but the DB save is via hook
-            const location = await getCurrentLocation();
+    const [locationLoading, setLocationLoading] = useState(false);
 
-            addLogMutation.mutate(
-                {
-                    entry: label,
-                    lat: location.coords.latitude,
-                    lon: location.coords.longitude,
-                    vesselId: currentVessel?.id,
+    const handleAction = async (actionLabel: string) => {
+        if (!currentVessel) {
+            Alert.alert("No Vessel", "Please select a vessel in your profile first.");
+            return;
+        }
+
+        setLocationLoading(true);
+        try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert("Permission denied", "Location is needed to log entries.");
+                setLocationLoading(false);
+                return;
+            }
+
+            const loc = await Location.getCurrentPositionAsync({});
+
+            addLogMutation.mutate({
+                vesselId: currentVessel.id,
+                //timestamp: new Date().toISOString(),
+                lat: loc.coords.latitude,
+                lon: loc.coords.longitude,
+                entry: actionLabel // Using the dynamic label as the entry text
+            }, {
+                onSuccess: () => {
+                    Alert.alert("Logged", `${actionLabel} recorded.`);
                 },
-                {
-                    onSuccess: () => {
-                        Alert.alert("Success", `Saved "${label}" to logbook.`);
-                    },
-                    onError: () => {
-                        Alert.alert("Error", "Could not save entry.");
-                    }
+                onError: (err) => {
+                    Alert.alert("Error", "Failed to save log.");
                 }
-            );
+            });
+
         } catch (error) {
-            Alert.alert("Error", "Could not acquire location.");
+            Alert.alert("Error", "Could not fetch location.");
+        } finally {
+            setLocationLoading(false);
         }
     };
 
+    const renderButton = ({ item }: { item: { id: string, label: string } }) => (
+        <TouchableOpacity
+            style={[styles.actionBtn, { backgroundColor: theme.colors.surface }]}
+            onPress={() => handleAction(item.label)}
+            disabled={locationLoading || addLogMutation.isPending}
+        >
+            <Text style={[styles.actionText, { color: theme.colors.textPrimary }]}>
+                {item.label}
+            </Text>
+        </TouchableOpacity>
+    );
+
     return (
         <Screen style={styles.container}>
-            {addLogMutation.isPending ? (
-                <View style={styles.loadingContainer}>
-                    <Text style={{ color: theme.colors.textPrimary }}>Saving...</Text>
-                </View>
-            ) : (
-                <>
-                    <Text style={[styles.title, { color: theme.colors.textPrimary }]}>
-                        Add an activity
+            <View style={styles.header}>
+                <Text style={[styles.vesselTitle, { color: theme.colors.textPrimary }]}>
+                    {currentVessel ? currentVessel.name : "No Vessel Selected"}
+                </Text>
+                {!currentVessel && (
+                    <Text style={{ color: theme.colors.textSecondary, marginTop: 5 }}>
+                        Go to Profile to select a vessel
                     </Text>
+                )}
+            </View>
 
-                    <View style={styles.grid}>
-                        <View style={styles.row}>
-                            <ActionButton label="Hoist sails" onPress={() => handleLogAction("Hoist sails")} />
-                            <ActionButton label="Lower sails" onPress={() => handleLogAction("Lower sails")} />
-                        </View>
-                        <View style={styles.row}>
-                            <ActionButton label="Hoist anchor" onPress={() => handleLogAction("Hoist anchor")} />
-                            <ActionButton label="Lower anchor" onPress={() => handleLogAction("Lower anchor")} />
-                        </View>
-                        <View style={styles.row}>
-                            <ActionButton label="Engine on" onPress={() => handleLogAction("Engine on")} />
-                            <ActionButton label="Engine off" onPress={() => handleLogAction("Engine off")} />
-                        </View>
-                    </View>
-                </>
-            )}
+            <View style={styles.gridContainer}>
+                <FlatList
+                    data={buttons}
+                    keyExtractor={(item) => item.id}
+                    renderItem={renderButton}
+                    numColumns={2}
+                    columnWrapperStyle={styles.row}
+                    contentContainerStyle={{ paddingBottom: 20 }}
+                    showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={
+                        <Text style={{ color: theme.colors.textSecondary, textAlign: 'center', marginTop: 20 }}>
+                            No buttons configured. Go to Profile to add some.
+                        </Text>
+                    }
+                />
+            </View>
         </Screen>
     );
 }
 
-// Small local wrapper to keep the grid clean
-const ActionButton = ({ label, onPress }: { label: string, onPress: () => void }) => (
-    <Button
-        title={label}
-        onPress={onPress}
-        style={styles.button}
-        textStyle={styles.buttonText}
-    />
-);
-
 const styles = StyleSheet.create({
     container: {
-        justifyContent: "center",
-        alignItems: "center",
-        padding: 20,
+        flex: 1,
+        paddingHorizontal: 20,
     },
-    loadingContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    title: {
-        fontSize: 18,
-        fontWeight: "600",
+    header: {
+        //marginTop: 20,
         marginBottom: 30,
+        alignItems: 'center',
     },
-    grid: {
-        width: "100%",
-        gap: 20,
+    vesselTitle: {
+        fontSize: 32, // Bigger font
+        fontWeight: "bold",
+        textAlign: "center",
+    },
+    welcome: {
+        fontSize: 28,
+        fontWeight: "bold",
+        marginBottom: 5,
+    },
+    gridContainer: {
+        flex: 1,
     },
     row: {
-        flexDirection: "row",
         justifyContent: "space-between",
+        marginBottom: 15, // Space between rows
     },
-    button: {
-        width: "48%",
-        height: 100, // Taller buttons for easy tapping
+    actionBtn: {
+        width: '48%',
+        aspectRatio: 2, // Keeps buttons rectangular/square-ish
         borderRadius: 15,
+        justifyContent: "center",
+        alignItems: "center",
+        elevation: 3,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 3,
     },
-    buttonText: {
-        textAlign: 'center',
-    }
+    actionText: {
+        color: "#fff",
+        fontSize: 18,
+        fontWeight: "600",
+        textAlign: "center",
+        padding: 5,
+    },
 });

@@ -9,6 +9,7 @@ import { useOwnTheme } from "@/src/context/ThemeContext";
 import { useVessels, useAddVessel, useDeleteVessel } from "@/src/features/vessels/hooks";
 import { useAuthStore } from "@/src/store/authStore";
 import { useVesselStore } from "@/src/store/vesselStore";
+import {useButtonStore} from "@/src/store/buttonStore";
 
 export default function Profile() {
     const { theme } = useOwnTheme();
@@ -16,6 +17,9 @@ export default function Profile() {
 
     const { user, mode, logout } = useAuthStore();
     const { currentVessel, setCurrentVessel } = useVesselStore();
+
+    // Button hooks
+    const { buttons, addButton, removeButton } = useButtonStore();
 
     // Data Hooks
     const { data: vessels = [] } = useVessels();
@@ -25,9 +29,11 @@ export default function Profile() {
     // UI State
     const [isVesselListOpen, setVesselListOpen] = useState(false);
     const [isAddVesselOpen, setAddVesselOpen] = useState(false);
+    const [isEditButtonsOpen, setEditButtonsOpen] = useState(false);
 
     // Form State
     const [newVessel, setNewVessel] = useState({ name: "", type: "", registration: "" });
+    const [newButtonLabel, setNewButtonLabel] = useState("");
 
     const handleLogout = async () => {
         await logout();
@@ -46,6 +52,12 @@ export default function Profile() {
 
     const handleDeleteVessel = (id: string) => {
         deleteVesselMutation.mutate(id);
+    };
+
+    const handleAddButton = () => {
+        if (!newButtonLabel.trim()) return;
+        addButton(newButtonLabel.trim());
+        setNewButtonLabel(""); // Clear input but keep modal open to add more
     };
 
     return (
@@ -85,6 +97,11 @@ export default function Profile() {
                     onPress={() => setAddVesselOpen(true)}
                     style={styles.menuItem}
                 />
+                <Button
+                title="Edit home buttons"
+                onPress={() => setEditButtonsOpen(true)}
+                style={styles.menuItem}
+                variant="outline"/>
             </View>
 
             {/* --- Modal: Vessel List --- */}
@@ -166,6 +183,71 @@ export default function Profile() {
                 </KeyboardAvoidingView>
             </Modal>
 
+            <Modal visible={isEditButtonsOpen} transparent animationType="fade" onRequestClose={() => setEditButtonsOpen(false)}>
+                <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.fullScreenOverlay}>
+
+                    {/* Large Modal Content - Fills most of the screen */}
+                    <View style={[styles.largeModalContent, { backgroundColor: theme.colors.background, borderColor: theme.colors.surface }]}>
+
+                        {/* 1. HEADER */}
+                        <Text style={[styles.largeModalTitle, { color: theme.colors.textPrimary }]}>Manage Buttons</Text>
+
+                        {/* 2. SCROLLABLE LIST (Middle) */}
+                        <ScrollView style={styles.buttonListScroll}>
+                            {buttons.length === 0 ? (
+                                <Text style={{ color: theme.colors.textSecondary, textAlign: 'center', marginTop: 20 }}>
+                                    No buttons added yet.
+                                </Text>
+                            ) : (
+                                buttons.map((item) => (
+                                    <View key={item.id} style={styles.buttonRowItem}>
+                                        <Text style={{ color: theme.colors.textPrimary, fontSize: 18 }}>{item.label}</Text>
+                                        <TouchableOpacity
+                                            onPress={() => removeButton(item.id)}
+                                            style={[styles.deleteBtn, { backgroundColor: theme.colors.danger }]}
+                                        >
+                                            <Text style={styles.btnTextWhite}>Remove</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                ))
+                            )}
+                        </ScrollView>
+
+                        {/* 3. BOTTOM CONTROLS (Updated Layout) */}
+                        <View style={[styles.bottomControlBar, { borderTopColor: theme.colors.surface }]}>
+
+                            {/* Input Field First (Full width) */}
+                            <Input
+                                placeholder="New Button Label"
+                                value={newButtonLabel}
+                                onChangeText={setNewButtonLabel}
+                                style={{ width: '100%', marginBottom: 15 }} // Added margin below input
+                            />
+
+                            {/* Two Buttons Row Underneath */}
+                            <View style={styles.actionButtonRow}>
+                                {/* Add Button */}
+                                <TouchableOpacity
+                                    onPress={handleAddButton}
+                                    style={[styles.controlBtn, { backgroundColor: theme.colors.primary, flex: 1, marginRight: 10 }]}
+                                >
+                                    <Text style={styles.btnTextWhite}>Add</Text>
+                                </TouchableOpacity>
+
+                                {/* Done Button */}
+                                <TouchableOpacity
+                                    onPress={() => setEditButtonsOpen(false)}
+                                    style={[styles.controlBtn, { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.textSecondary, flex: 1 }]}
+                                >
+                                    <Text style={{ color: theme.colors.textPrimary, fontWeight: '600' }}>Done</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
+
         </Screen>
     );
 }
@@ -174,13 +256,11 @@ const styles = StyleSheet.create({
     container: {
         padding: 20,
     },
-    // REUSABLE TEXT STYLE
     btnTextWhite: {
         color: 'white',
         fontWeight: '600',
         fontSize: 14,
     },
-    // HEADER LOGOUT BUTTON
     headerLogoutBtn: {
         position: 'absolute',
         top: 0,
@@ -195,11 +275,10 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 2,
     },
-    // LIST DELETE BUTTON (Matches Header Logout Style)
     deleteBtn: {
-        paddingVertical: 8,
-        paddingHorizontal: 15,
-        borderRadius: 20,
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 15,
     },
     header: {
         alignItems: 'center',
@@ -240,7 +319,7 @@ const styles = StyleSheet.create({
         height: 55,
         justifyContent: 'center',
     },
-    // Unified Modal Styles
+    // --- STANDARD MODAL STYLES ---
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.7)',
@@ -277,5 +356,55 @@ const styles = StyleSheet.create({
         paddingVertical: 15,
         borderBottomWidth: 1,
         borderBottomColor: '#333',
+    },
+
+    // --- NEW LARGE MODAL STYLES ---
+    fullScreenOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.85)',
+        justifyContent: 'center',
+        padding: 20,
+    },
+    largeModalContent: {
+        flex: 1,
+        borderRadius: 15,
+        borderWidth: 1,
+        overflow: 'hidden',
+        padding: 20,
+    },
+    largeModalTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginBottom: 20,
+        textAlign: 'center',
+    },
+    buttonListScroll: {
+        flex: 1,
+        marginBottom: 20,
+    },
+    buttonRowItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#333',
+    },
+    bottomControlBar: {
+        flexDirection: 'column', // Changed to column so items stack vertically
+        borderTopWidth: 1,
+        paddingTop: 15,
+    },
+    actionButtonRow: {
+        flexDirection: 'row', // Horizontal row for the two buttons
+        width: '100%',
+        justifyContent: 'space-between',
+    },
+    controlBtn: {
+        height: 50,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        borderRadius: 10,
     }
 });

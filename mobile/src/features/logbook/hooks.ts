@@ -49,12 +49,12 @@ export function useUpdateLog() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (data: { id: string; entry: string }) => {
-            return updateLog(db, data.id, data.entry);
+        mutationFn: async (data: { id: string; entry: string, timestamp?: string, lat?: number, lon?: number }) => {
+            return updateLog(db, data.id, data.entry, data.timestamp, data.lat, data.lon);
         },
         onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: LOG_KEYS.all });
-            queryClient.invalidateQueries({ queryKey: LOG_KEYS.detail(variables.id) });
+            queryClient.invalidateQueries({ queryKey: LOG_KEYS.all }).then();
+            queryClient.invalidateQueries({queryKey: LOG_KEYS.detail(variables.id)}).then();
         },
     });
 }
