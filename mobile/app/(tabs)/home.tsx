@@ -1,149 +1,152 @@
-import {useOwnTheme} from "@/context/themeContext";
-import React, {useMemo, useState} from "react";
-import {ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View} from "react-native";
-import {getCurrentLocation} from "@/utils/location";
+import React, { useState } from "react";
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, FlatList, Alert } from "react-native";
+import { Screen } from "@/src/components/Screen";
+import { useOwnTheme } from "@/src/context/ThemeContext";
+import { useAuthStore } from "@/src/store/authStore";
+import { useVesselStore } from "@/src/store/vesselStore";
+import { useButtonStore } from "@/src/store/buttonStore"; // <--- Import Store
+import { useRouter } from "expo-router";
+import { useAddLog } from "@/src/features/logbook/hooks";
+import * as Location from 'expo-location';
 
-import {useSQLiteContext} from "expo-sqlite";
-import {addLog} from "@/database/db";
-import {useAppState} from "@/state/appState";
+export default function Home() {
+    const { theme } = useOwnTheme();
+    const router = useRouter();
+    const { user } = useAuthStore();
+    const { currentVessel } = useVesselStore();
+    const { buttons } = useButtonStore(); // <--- Get dynamic buttons
+    const addLogMutation = useAddLog();
 
-export default function AddActivity() {
-    const {theme} = useOwnTheme();
-    const styles = useMemo(() => createStyles(theme), [theme]);
+    const [locationLoading, setLocationLoading] = useState(false);
 
-    const { currentVessel } = useAppState();
-    const db = useSQLiteContext();
-    const [loading, setLoading] = useState(false);
+    const handleAction = async (actionLabel: string) => {
+        if (!currentVessel) {
+            Alert.alert("No Vessel", "Please select a vessel in your profile first.");
+            return;
+        }
 
-    const handleLocation = async (buttonLabel: string) => {
-        console.log(`Fetching location for ${buttonLabel}...`);
-        setLoading(true);
-
+        setLocationLoading(true);
         try {
-            const location = await getCurrentLocation();
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert("Permission denied", "Location is needed to log entries.");
+                setLocationLoading(false);
+                return;
+            }
 
-            const newId = await addLog(
-                db,
-                buttonLabel,
-                location.coords.latitude,
-                location.coords.longitude,
-                currentVessel?.id
-            );
+            const loc = await Location.getCurrentPositionAsync({});
 
-            console.log(`SUCCESS: Saved to DB with ID: ${newId}`);
-            Alert.alert("Success", `Saved "${buttonLabel}" to logbook.`);
+            addLogMutation.mutate({
+                vesselId: currentVessel.id,
+                //timestamp: new Date().toISOString(),
+                lat: loc.coords.latitude,
+                lon: loc.coords.longitude,
+                entry: actionLabel // Using the dynamic label as the entry text
+            }, {
+                onSuccess: () => {
+                    Alert.alert("Logged", `${actionLabel} recorded.`);
+                },
+                onError: (err) => {
+                    Alert.alert("Error", "Failed to save log.");
+                }
+            });
 
         } catch (error) {
-            console.error(error);
-            Alert.alert("Error", "Could not save entry.");
+            Alert.alert("Error", "Could not fetch location.");
         } finally {
-            setLoading(false);
+            setLocationLoading(false);
         }
-    }
+    };
 
-    // Individual button handlers
-    const handleAdd1 = () => handleLocation("Hoist sails");
-    const handleAdd2 = () => handleLocation("Lower sails");
-    const handleAdd3 = () => handleLocation("Hoist anchor");
-    const handleAdd4 = () => handleLocation("Lower anchor");
-    const handleAdd5 = () => handleLocation("Engine on");
-    const handleAdd6 = () => handleLocation("Engine off");
+    const renderButton = ({ item }: { item: { id: string, label: string } }) => (
+        <TouchableOpacity
+            style={[styles.actionBtn, { backgroundColor: theme.colors.surface }]}
+            onPress={() => handleAction(item.label)}
+            disabled={locationLoading || addLogMutation.isPending}
+        >
+            <Text style={[styles.actionText, { color: theme.colors.textPrimary }]}>
+                {item.label}
+            </Text>
+        </TouchableOpacity>
+    );
 
     return (
-        <View style={styles.container}>
-            {!loading && <Text style={styles.text}>Add an activity here</Text>}
-
-            {/*Show spinner if app is fetching location*/}
-            {loading ? (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={theme.colors.textPrimary} />
-                    <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>
-                        Acquiring location...
+        <Screen style={styles.container}>
+            <View style={styles.header}>
+                <Text style={[styles.vesselTitle, { color: theme.colors.textPrimary }]}>
+                    {currentVessel ? currentVessel.name : "No Vessel Selected"}
+                </Text>
+                {!currentVessel && (
+                    <Text style={{ color: theme.colors.textSecondary, marginTop: 5 }}>
+                        Go to Profile to select a vessel
                     </Text>
-                </View>
-            ) : (
-                <View style={styles.gridContainer}>
-                    <View style={styles.row}>
-                        <ActivityButton label="Hoist sails" onPress={handleAdd1} theme={theme}/>
-                        <ActivityButton label="Lower sails" onPress={handleAdd2} theme={theme}/>
-                    </View>
+                )}
+            </View>
 
-                    <View style={styles.row}>
-                        <ActivityButton label="Hoist anchor" onPress={handleAdd3} theme={theme}/>
-                        <ActivityButton label="Lower anchor" onPress={handleAdd4} theme={theme}/>
-                    </View>
-
-                    <View style={styles.row}>
-                        <ActivityButton label="Engine on" onPress={handleAdd5} theme={theme}/>
-                        <ActivityButton label="Engine off" onPress={handleAdd6} theme={theme}/>
-                    </View>
-                </View>
-            )}
-        </View>
+            <View style={styles.gridContainer}>
+                <FlatList
+                    data={buttons}
+                    keyExtractor={(item) => item.id}
+                    renderItem={renderButton}
+                    numColumns={2}
+                    columnWrapperStyle={styles.row}
+                    contentContainerStyle={{ paddingBottom: 20 }}
+                    showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={
+                        <Text style={{ color: theme.colors.textSecondary, textAlign: 'center', marginTop: 20 }}>
+                            No buttons configured. Go to Profile to add some.
+                        </Text>
+                    }
+                />
+            </View>
+        </Screen>
     );
 }
 
-const ActivityButton = ({label, onPress, theme, disabled}: any) => {
-    const styles = createStyles(theme);
-    return (
-        <TouchableOpacity style={[styles.addItemButton, disabled && {opacity: 0.5}]} onPress={onPress}
-                          disabled={disabled}>
-            <Text style={styles.addItemText}>{label}</Text>
-        </TouchableOpacity>
-    );
-};
-
-const createStyles = (theme: any) =>
-    StyleSheet.create({
-        container: {
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-            backgroundColor: theme.colors.background,
-            padding: 20,
-        },
-        text: {
-            color: theme.colors.textPrimary,
-            fontSize: 18,
-            fontWeight: "600",
-            marginBottom: 20,
-        },
-        loadingContainer: {
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: 200,
-        },
-        loadingText: {
-            marginTop: 10,
-            fontSize: 14,
-        },
-        gridContainer: {
-            width: "100%",
-            alignItems: "center",
-            justifyContent: "center",
-        },
-        row: {
-            flexDirection: "row",
-            justifyContent: "space-evenly",
-            width: "100%",
-            marginBottom: 20,
-        },
-        addItemButton: {
-            backgroundColor: theme.colors.surface,
-            width: "45%",
-            paddingVertical: 30,
-            borderRadius: 10,
-            alignItems: "center",
-            justifyContent: "center",
-            elevation: 3,
-            shadowColor: "#000",
-            shadowOpacity: 0.15,
-            shadowOffset: {width: 0, height: 2},
-            shadowRadius: 4,
-        },
-        addItemText: {
-            color: theme.colors.textPrimary,
-            fontSize: 16,
-            fontWeight: "600",
-        },
-    });
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        paddingHorizontal: 20,
+    },
+    header: {
+        //marginTop: 20,
+        marginBottom: 30,
+        alignItems: 'center',
+    },
+    vesselTitle: {
+        fontSize: 32, // Bigger font
+        fontWeight: "bold",
+        textAlign: "center",
+    },
+    welcome: {
+        fontSize: 28,
+        fontWeight: "bold",
+        marginBottom: 5,
+    },
+    gridContainer: {
+        flex: 1,
+    },
+    row: {
+        justifyContent: "space-between",
+        marginBottom: 15, // Space between rows
+    },
+    actionBtn: {
+        width: '48%',
+        aspectRatio: 2, // Keeps buttons rectangular/square-ish
+        borderRadius: 15,
+        justifyContent: "center",
+        alignItems: "center",
+        elevation: 3,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 3,
+    },
+    actionText: {
+        color: "#fff",
+        fontSize: 18,
+        fontWeight: "600",
+        textAlign: "center",
+        padding: 5,
+    },
+});

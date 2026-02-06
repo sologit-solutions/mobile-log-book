@@ -1,5 +1,5 @@
 import { Stack } from "expo-router";
-import { useOwnTheme } from "@/context/themeContext";
+import { useOwnTheme } from "@/src/context/ThemeContext";
 import {View} from "react-native";
 
 export default function EventsLayout() {

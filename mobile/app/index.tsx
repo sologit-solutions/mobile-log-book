@@ -1,640 +1,327 @@
-/**
- * Login Screen Component
- *
- * This component implements the main login screen for the application with:
- * - Email/password authentication
- * - Online/offline mode switching
- * - Keyboard handling
- * - Form validation and error handling
- *
- * The screen provides:
- * - User authentication functionality
- * - Offline mode access
- * - Account creation option
- * - Responsive design for different screen sizes
- * - Keyboard avoidance for better UX
- */
-import { DARK_THEME } from "@/assets/styles/defaultColors";
-import { useOwnTheme } from "@/context/themeContext";
-import { useAppState } from "@/state/appState";
-import {loginUser, registerUserTemp, registerUser, loginUserOld} from "@/utils/api";
-import {Link, useRouter} from "expo-router";
-import React, {JSX, useMemo, useState} from "react";
+import React, { useState } from "react";
 import {
-  Alert,
-  Dimensions,
+  StyleSheet,
+  View,
+  Text,
   Image,
-  Keyboard,
+  Alert,
+  Modal,
+  TouchableOpacity,
+  ScrollView,
   KeyboardAvoidingView,
   Platform,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
-  Modal,
-  ScrollView,
   Pressable,
+  TouchableWithoutFeedback,
+  Keyboard
 } from "react-native";
+import { useRouter } from "expo-router";
+import { Screen } from "@/src/components/Screen";
+import { Input } from "@/src/components/Input";
+import { Button } from "@/src/components/Button";
+import { useOwnTheme } from "@/src/context/ThemeContext";
+import { useAuthStore } from "@/src/store/authStore";
 
-const PlaceHolderLogo = require("@/assets/images/boat-outline.png");
-const { width, height } = Dimensions.get("window");
+export default function LoginScreen() {
+  const router = useRouter();
+  const { theme } = useOwnTheme();
+  const { login, setMode } = useAuthStore();
 
-/**
- * Main Login Screen Component
- *
- * This is the primary login screen that handles user authentication
- * and provides access to both online and offline modes.
- *
- * @component
- * @returns {JSX.Element} Login screen with form and navigation options
- *
- * @see useAppState
- * @see useOwnTheme
- * @see loginUser
- * @see useRouter
- */
-export default function Index(): JSX.Element {
-  const [form, setForm] = useState({ email: "", password: "" });
+  // --- Main Form State ---
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // Sign Up Modal State
+  // --- Modal States ---
   const [signupVisible, setSignupVisible] = useState(false);
-  const [signupForm, setSignupForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
+  const [forgotPassVisible, setForgotPassVisible] = useState(false);
 
-  // Forgot Password Modal State
-  const [forgotPasswordVisible, setForgotPasswordVisible] = useState(false);
+  // --- Modal Form Data ---
+  const [signupData, setSignupData] = useState({ name: "", email: "", password: "", confirm: "" });
   const [resetEmail, setResetEmail] = useState("");
 
-  /**
-   * Access to applications state functions
-   *
-   * @property {Function} setMode - Function to update application mode
-   * @property {Function} setUser - Function to update current user
-   */
-  const { setMode, setUser } = useAppState();
+  // --- Handlers ---
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please enter email and password");
+      return;
+    }
+    setLoading(true);
+    setTimeout(() => { // Mock API
+      setLoading(false);
+      if (email.includes("@")) {
+        // Determine Name logic
+        let userName: string;
+        if (email.toLowerCase().includes("eikka")) {
+          userName = "eikkaaaaa";
+        } else {
+          userName = email.split('@');
+        }
 
-  /**
-   * Navigation router for screen transitioning
-   */
-  const router = useRouter();
-
-  /**
-   * Theme context for styling the app
-   * Curerntly in development and not funcitoning properly
-   */
-  const { theme } = useOwnTheme();
-
-  /**
-   *
-   * Memoized styles based on current theme
-   *
-   * @param {Object} theme - Current theme object
-   * @returns {Object} Styled components for the screen
-   */
-  const styles = useMemo(() => createStyles(theme), [theme]);
-
-  /**
-   * Handle login with the API authentication
-   * Currently using hardcoded values
-   *
-   * @returns {Promise <void>}
-   * @throws {Error} if login fails or API call fails
-   */
-  const handleOnlineLogin = async (): Promise<void> => {
-    try {
-      const user = await loginUserOld(form.email, form.password);
-      if (user) {
-        setUser(user);
-        setMode("online");
-        //router.push("/(tabs)");
-          router.replace("/(tabs)/home");
-        setForm({
-          email: "",
-          password: "",
-        });
+        login({ id: "1", name: userName, email }, "mock-token");
+        router.replace("/(tabs)/home");
       } else {
         Alert.alert("Error", "Invalid credentials");
-        setForm({
-          email: "",
-          password: "",
-        });
       }
-    } catch (error) {
-      Alert.alert("Error", "Login failed. Try again.");
-      console.error(error);
-    }
+    }, 1000);
   };
 
-  /**
-   * Handle offline mode activation
-   * - Sets application mode to offline
-   * - Sets user to offline mode user
-   * - Navigates to main application tabs
-   */
-  const handleOfflineMode = async () => {
-    setMode("offline");
-    setUser({
-      id: "offline",
-      name: "Offline User",
-      email: "offline@local"
-    });
-    //router.push("/(tabs)");
-      router.replace("/(tabs)/home");
+  const handleOfflineMode = () => {
+    setMode('offline');
+    router.replace("/(tabs)/home");
   };
 
-  // --- Sign Up Handlers ---
+  const handleSignup = () => {
+    if (!signupData.name || !signupData.email || !signupData.password) return Alert.alert("Error", "Fill all fields");
+    if (signupData.password !== signupData.confirm) return Alert.alert("Error", "Passwords do not match");
 
-  const handleSignup = async () => {
-    // Basic validation
-    if (!signupForm.name || !signupForm.email || !signupForm.password) {
-      Alert.alert("Missing Information", "Please fill in all fields.");
-      return;
-    }
-
-    if (signupForm.password !== signupForm.confirmPassword) {
-      Alert.alert("Password Error", "Passwords do not match. Please try again.");
-      return;
-    }
-
-    // TODO: Connect to backend registration API here
-    console.log("Creating account for:", signupForm);
-    const userData = await registerUserTemp(signupForm.email, signupForm.name, signupForm.password);
-
-    if (userData) {
-      setUser(userData);
-      setMode("online");
-
-      setSignupVisible(false);
-      router.replace("/(tabs)/home");
-    } else {
-      Alert.alert("Error", "Could not create account. Email might be taken.");
-    }
-
-    Alert.alert(
-        "Success",
-        `Account created for ${signupForm.name}! You can now log in.`,
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              setSignupVisible(false);
-              setSignupForm({ name: "", email: "", password: "" , confirmPassword: ""});
-            }
-          }
-        ]
-    );
+    Alert.alert("Success", `Account created for ${signupData.name}!`, [{
+      text: "OK", onPress: () => {
+        // Log in new user immediately
+        login({ id: "new-user", name: signupData.name, email: signupData.email }, "mock-token");
+        setSignupVisible(false);
+        setSignupData({ name: "", email: "", password: "", confirm: "" });
+        router.replace("/(tabs)/home");
+      }
+    }]);
   };
-
-  // --- Forgot Password Handlers ---
 
   const handleResetPassword = () => {
-    if (!resetEmail) {
-      Alert.alert("Missing Information", "Please enter your email address.");
-      return;
-    }
-    // TODO: Connect to backend password reset API here
-    console.log("Sending reset link to:", resetEmail);
-
-    Alert.alert(
-        "Check your email",
-        `We have sent a password reset link to ${resetEmail}`,
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              setForgotPasswordVisible(false);
-              setResetEmail("");
-            },
-          },
-        ]
-    );
+    if (!resetEmail) return Alert.alert("Error", "Enter your email");
+    Alert.alert("Check your email", `Link sent to ${resetEmail}`, [{
+      text: "OK", onPress: () => {
+        setForgotPassVisible(false);
+        setResetEmail("");
+      }
+    }]);
   };
 
   return (
-    /**
-     * KeyboardAvoidingView component for better mobile UX
-     */
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      {/* TouchableWithoutFeedback to dismiss keyboard on tap */}
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.content}>
-          {/*Image and header text*/}
-          <View style={styles.header}>
-            <Image source={PlaceHolderLogo} style={styles.headerImage} />
-            <Text style={styles.title}>Login to Logify</Text>
-          </View>
-
-          {/*Login form*/}
-          <View style={styles.formContainer}>
-            {/*Email*/}
-            <View style={styles.inputContainer}>
-              <TextInput
-                value={form.email}
-                onChangeText={(text) => setForm({ ...form, email: text })}
-                style={styles.input}
-                placeholder="Email"
-                placeholderTextColor={theme.textSecondary}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-
-            {/*Password*/}
-            <View style={styles.inputContainer}>
-              <TextInput
-                value={form.password}
-                onChangeText={(text) => setForm({ ...form, password: text })}
-                style={styles.input}
-                placeholder="Password"
-                placeholderTextColor={theme.textSecondary}
-                secureTextEntry
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-
-            {/*Login button*/}
-            <TouchableOpacity
-              onPress={handleOnlineLogin}
-              style={styles.signInButton}
-            >
-              <Text style={styles.signInButtonText}>Sign in</Text>
-            </TouchableOpacity>
-
-            {/* Forgot Password Link - Right under the login button */}
-            <TouchableOpacity
-                style={styles.forgotPasswordContainer}
-                onPress={() => setForgotPasswordVisible(true)}
-            >
-              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </TouchableWithoutFeedback>
-
-      {/*Use offline*/}
-      <TouchableOpacity
-        onPress={() => {
-          alert("Using offline");
-        }}
-        style={styles.signUpLink}
-      >
-        <TouchableOpacity
-          onPress={handleOfflineMode}
-          style={styles.useOfflineButton}
-        >
-          <Text style={styles.signInButtonText}>Use app offline</Text>
-        </TouchableOpacity>
-      </TouchableOpacity>
-
-      {/* Sign Up Link */}
-      <TouchableOpacity
-          style={styles.signUpLink}
-          onPress={() => setSignupVisible(true)}
-      >
-        <Text style={styles.signUpLinkText}>
-          Don&#39;t have an account?{" "}
-          <Text style={styles.signUpLinkUnderlined}>Sign up here</Text>
-        </Text>
-      </TouchableOpacity>
-
-      {/* ------------------------------------------------------------
-        SIGN UP MODAL
-        ------------------------------------------------------------
-      */}
-      <Modal
-          animationType="fade"
-          transparent={true}
-          visible={signupVisible}
-          onRequestClose={() => setSignupVisible(false)}
-      >
+      <Screen style={styles.container}>
         <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={styles.modalOverlay}
+            style={{ flex: 1 }}
         >
-          {/* ScrollView allows content to maintain size and scroll if compressed */}
-          <ScrollView
-              contentContainerStyle={styles.modalScrollContent}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-          >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.innerContainer}>
 
-          {/* Modal Overlay (Semi-transparent background) */}
-            <Pressable style={styles.innerScrollPressable} onPress={Keyboard.dismiss}>
-            {/* Modal Content Card */}
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Create Account</Text>
+              {/* 1. Main Content: Logo + Form */}
+              <View style={styles.content}>
+                <View style={styles.header}>
+                  <Image
+                      source={require('@/assets/images/boat-outline.png')}
+                      style={[styles.logo, {tintColor: theme.colors.logo}]}
+                      resizeMode="contain"
+                  />
+                  <Text style={[styles.title, { color: theme.colors.textPrimary }]}>Login to Logify</Text>
+                </View>
 
-              {/* Name Input */}
-              <TextInput
-                  value={signupForm.name}
-                  onChangeText={(text) => setSignupForm({ ...signupForm, name: text })}
-                  style={styles.input} // Reusing existing input style
-                  placeholder="Name"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  placeholderTextColor={theme.textSecondary || "#888"}
-              />
+                <View style={styles.formContainer}>
+                  <Input
+                      placeholder="Email"
+                      value={email}
+                      onChangeText={setEmail}
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                      style={styles.bigInput}
+                  />
+                  <Input
+                      placeholder="Password"
+                      value={password}
+                      onChangeText={setPassword}
+                      secureTextEntry
+                      style={styles.bigInput}
+                  />
 
-              {/* Email Input */}
-              <TextInput
-                  value={signupForm.email}
-                  onChangeText={(text) => setSignupForm({ ...signupForm, email: text })}
-                  style={[styles.input, { marginTop: 15 }]}
-                  placeholder="Email"
-                  placeholderTextColor={theme.textSecondary || "#888"}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-              />
+                  <Button
+                      title="Sign in"
+                      onPress={handleLogin}
+                      loading={loading}
+                      style={styles.signInBtn}
+                  />
 
-              {/* Password Input */}
-              <TextInput
-                  value={signupForm.password}
-                  onChangeText={(text) => setSignupForm({ ...signupForm, password: text })}
-                  style={[styles.input, { marginTop: 15 }]}
-                  placeholder="Password"
-                  placeholderTextColor={theme.textSecondary || "#888"}
-                  secureTextEntry
-              />
+                  <TouchableOpacity
+                      style={styles.forgotPassLink}
+                      onPress={() => setForgotPassVisible(true)}
+                  >
+                    <Text style={[styles.linkText, { color: theme.colors.textPrimary }]}>Forgot Password?</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
 
-              {/* Confirm Password Input */}
-              <TextInput
-                  value={signupForm.confirmPassword}
-                  onChangeText={(text) => setSignupForm({ ...signupForm, confirmPassword: text })}
-                  style={[styles.input, { marginTop: 15 }]}
-                  placeholder="Confirm Password"
-                  placeholderTextColor={theme.textSecondary || "#888"}
-                  secureTextEntry
-              />
-
-              {/* Action Buttons */}
-              <View style={styles.modalButtons}>
+              {/* 2. Footer: Offline & Sign Up */}
+              <View style={styles.footer}>
                 <TouchableOpacity
-                    style={[styles.modalButton, styles.cancelButton]}
-                    onPress={() => setSignupVisible(false)}
+                    onPress={handleOfflineMode}
+                    style={[styles.offlineBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.surface }]}
                 >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                  <Text style={[styles.offlineText, { color: theme.colors.textPrimary }]}>Use app offline</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={[styles.modalButton, styles.createButton]}
-                    onPress={handleSignup}
-                >
-                  <Text style={styles.createButtonText}>Sign Up</Text>
+                <TouchableOpacity onPress={() => setSignupVisible(true)} style={styles.signupContainer}>
+                  <Text style={{ color: theme.colors.textPrimary }}>
+                    Don&#39;t have an account? <Text style={styles.underline}>Sign up here</Text>
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
-            </Pressable>
-          </ScrollView>
-          </KeyboardAvoidingView>
-      </Modal>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
 
-      {/* ------------------------------------------------------------
-        FORGOT PASSWORD MODAL
-        ------------------------------------------------------------
-      */}
-      <Modal
-          animationType="fade"
-          transparent={true}
-          visible={forgotPasswordVisible}
-          onRequestClose={() => setForgotPasswordVisible(false)}
-      >
-        <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={styles.modalOverlay}
-        >
-          <ScrollView
-              contentContainerStyle={styles.modalScrollContent}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-          >
-            <Pressable style={styles.innerScrollPressable} onPress={Keyboard.dismiss}>
-                <View style={styles.modalContent}>
-                  <Text style={styles.modalTitle}>Reset Password</Text>
-                  <Text style={styles.modalSubtitle}>
+        {/* ================= MODALS ================= */}
+
+        {/* Sign Up Modal */}
+        <Modal visible={signupVisible} transparent animationType="fade" onRequestClose={() => setSignupVisible(false)}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
+            <ScrollView contentContainerStyle={styles.modalScroll}>
+              <Pressable style={{flex: 1, justifyContent: 'center', alignItems: 'center'}} onPress={Keyboard.dismiss}>
+                <View style={[styles.modalContent, { backgroundColor: theme.colors.background, borderColor: theme.colors.surface }]}>
+                  <Text style={[styles.modalTitle, { color: theme.colors.textPrimary }]}>Create Account</Text>
+
+                  <Input placeholder="Name" value={signupData.name} onChangeText={t => setSignupData({...signupData, name: t})} style={styles.bigInput} />
+                  <Input placeholder="Email" value={signupData.email} onChangeText={t => setSignupData({...signupData, email: t})} autoCapitalize="none" style={styles.bigInput} />
+                  <Input placeholder="Password" value={signupData.password} onChangeText={t => setSignupData({...signupData, password: t})} secureTextEntry style={styles.bigInput} />
+                  <Input placeholder="Confirm Password" value={signupData.confirm} onChangeText={t => setSignupData({...signupData, confirm: t})} secureTextEntry style={styles.bigInput} />
+
+                  <View style={styles.modalActions}>
+                    <Button title="Cancel" variant="outline" onPress={() => setSignupVisible(false)} style={{ flex: 1, marginRight: 10 }} />
+                    <Button title="Sign Up" onPress={handleSignup} style={{ flex: 1, marginLeft: 10 }} />
+                  </View>
+                </View>
+              </Pressable>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </Modal>
+
+        {/* Forgot Password Modal */}
+        <Modal visible={forgotPassVisible} transparent animationType="fade" onRequestClose={() => setForgotPassVisible(false)}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
+            <ScrollView contentContainerStyle={styles.modalScroll}>
+              <Pressable style={{flex: 1, justifyContent: 'center', alignItems: 'center'}} onPress={Keyboard.dismiss}>
+                <View style={[styles.modalContent, { backgroundColor: theme.colors.background, borderColor: theme.colors.surface }]}>
+                  <Text style={[styles.modalTitle, { color: theme.colors.textPrimary }]}>Reset Password</Text>
+                  <Text style={{ color: theme.colors.textSecondary, marginBottom: 20, textAlign: 'center' }}>
                     Enter your email to receive a reset link.
                   </Text>
 
-                  <TextInput
-                      value={resetEmail}
-                      onChangeText={setResetEmail}
-                      style={styles.input}
-                      placeholder="Email"
-                      placeholderTextColor={theme.textSecondary || "#888"}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                  />
+                  <Input placeholder="Email" value={resetEmail} onChangeText={setResetEmail} autoCapitalize="none" style={styles.bigInput} />
 
-                  <View style={styles.modalButtons}>
-                    <TouchableOpacity
-                        style={[styles.modalButton, styles.cancelButton]}
-                        onPress={() => setForgotPasswordVisible(false)}
-                    >
-                      <Text style={styles.cancelButtonText}>Cancel</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.modalButton, styles.createButton]}
-                        onPress={handleResetPassword}
-                    >
-                      <Text style={styles.createButtonText}>Send Link</Text>
-                    </TouchableOpacity>
+                  <View style={styles.modalActions}>
+                    <Button title="Cancel" variant="outline" onPress={() => setForgotPassVisible(false)} style={{ flex: 1, marginRight: 10 }} />
+                    <Button title="Send Link" onPress={handleResetPassword} style={{ flex: 1, marginLeft: 10 }} />
                   </View>
                 </View>
-            </Pressable>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </Modal>
-    </KeyboardAvoidingView>
+              </Pressable>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </Modal>
+      </Screen>
   );
 }
 
-const createStyles = (theme: any) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      alignItems: "center",
-    },
-    content: {
-      width: "100%",
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    header: {
-      marginBottom: 15,
-      width: "100%",
-      alignItems: "center",
-    },
-    headerImage: {
-      height: height * 0.1,
-      width: width * 0.2,
-    },
-    title: {
-      fontSize: 27,
-      fontWeight: "bold",
-      color: DARK_THEME.textPrimary,
-      padding: 5,
-      textAlign: "center",
-    },
-    formContainer: {
-      width: "80%",
-    },
-    inputContainer: {
-      marginBottom: 20,
-    },
-    input: {
-      width: "100%",
-      height: 50,
-      minHeight: 50,
-      backgroundColor: DARK_THEME.surface,
-      borderRadius: 8,
-      paddingHorizontal: 15,
-      fontSize: 16,
-      color: DARK_THEME.textPrimary,
-      borderWidth: 1,
-      borderColor: DARK_THEME.surface,
-    },
-    signInButton: {
-      backgroundColor: DARK_THEME.surface,
-      borderColor: DARK_THEME.surface,
-      borderWidth: 1,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      paddingVertical: 15,
-      borderRadius: 30,
-    },
-    signInButtonText: {
-      color: DARK_THEME.textPrimary,
-      fontSize: 18,
-      lineHeight: 26,
-      fontWeight: "600",
-    },
-    useOfflineButton: {
-      backgroundColor: DARK_THEME.surface,
-      borderColor: DARK_THEME.surface,
-      borderWidth: 1,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      paddingVertical: 15,
-      paddingHorizontal: 20,
-      borderRadius: 30,
-    },
-    useOfflineButtonText: {
-      color: DARK_THEME.textPrimary,
-      fontSize: 18,
-      lineHeight: 26,
-      fontWeight: "600",
-      paddingVertical: 20,
-    },
-    signUpLink: {
-      paddingVertical: 10,
-    },
-    signUpLinkText: {
-      fontSize: 15,
-      fontWeight: "600",
-      color: DARK_THEME.textPrimary,
-    },
-    signUpLinkUnderlined: {
-      textDecorationLine: "underline",
-    },
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: "rgba(0, 0, 0, 0.7)",
-    },
-    modalScrollContent: {
-      flexGrow: 1,
-      justifyContent: "center",
-    },
-    innerScrollPressable: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingVertical: 20
-    },
-    modalContent: {
-      width: "85%",
-      backgroundColor: DARK_THEME.background,
-      borderRadius: 20,
-      padding: 20,
-      alignItems: "center",
-      elevation: 5,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 4,
-      borderWidth: 1,
-      borderColor: DARK_THEME.surface,
-      flexGrow: 0
-    },
-    modalTitle: {
-      fontSize: 22,
-      fontWeight: "bold",
-      color: DARK_THEME.textPrimary,
-      marginBottom: 20,
-    },
-    modalSubtitle: {
-      fontSize: 14,
-      color: DARK_THEME.textPrimary, // or secondary
-      marginBottom: 20,
-      textAlign: 'center',
-    },
-    modalButtons: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      width: "100%",
-      marginTop: 25,
-    },
-    modalButton: {
-      flex: 1,
-      paddingVertical: 12,
-      borderRadius: 10,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    cancelButton: {
-      marginRight: 10,
-      backgroundColor: "transparent",
-      borderWidth: 1,
-      borderColor: DARK_THEME.textSecondary || "#888",
-    },
-    createButton: {
-      marginLeft: 10,
-      backgroundColor: DARK_THEME.surface,
-    },
-    cancelButtonText: {
-      color: DARK_THEME.textPrimary,
-      fontWeight: "600",
-      fontSize: 16,
-    },
-    createButtonText: {
-      color: DARK_THEME.textPrimary,
-      fontWeight: "bold",
-      fontSize: 16,
-    },
-    forgotPasswordContainer: {
-      alignItems: 'center',
-      marginTop: 15,
-      padding: 5,
-    },
-    forgotPasswordText: {
-      color: DARK_THEME.textPrimary, // or a secondary color like '#888'
-      fontSize: 14,
-      fontWeight: "500",
-      textDecorationLine: "underline",
-    },
-  });
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  innerContainer: {
+    flex: 1,
+    paddingHorizontal: 30, // Global side padding
+    justifyContent: "space-between", // Pushes footer to bottom
+  },
+  content: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    width: "100%",
+  },
+  header: {
+    marginBottom: 30,
+    width: "100%",
+    alignItems: "center",
+  },
+  logo: {
+    width: 100,
+    height: 100,
+    marginBottom: 10,
+  },
+  title: {
+    fontSize: 27,
+    fontWeight: "bold",
+    padding: 5,
+    textAlign: "center",
+  },
+  formContainer: {
+    width: "100%", // Fills the padded container
+  },
+  bigInput: {
+    height: 55, // Taller than standard
+    fontSize: 16,
+  },
+  signInBtn: {
+    marginTop: 10,
+    height: 55, // Match input height
+  },
+  forgotPassLink: {
+    alignItems: 'center',
+    marginTop: 15,
+    padding: 5,
+  },
+  linkText: {
+    fontSize: 14,
+    fontWeight: "500",
+    textDecorationLine: "underline",
+  },
+  // Footer Section
+  footer: {
+    alignItems: 'center',
+    paddingBottom: 40,
+    width: "100%",
+  },
+  offlineBtn: {
+    marginBottom: 10,
+    paddingVertical: 15,
+    borderRadius: 30,
+    borderWidth: 1,
+    width: '100%',
+    alignItems: 'center',
+  },
+  offlineText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  signupContainer: {
+    paddingVertical: 10,
+  },
+  underline: {
+    textDecorationLine: "underline",
+    fontWeight: "bold",
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+  },
+  modalScroll: {
+    flexGrow: 1,
+    justifyContent: "center",
+    padding: 20,
+  },
+  modalContent: {
+    borderRadius: 20,
+    padding: 20,
+    alignItems: "center",
+    elevation: 5,
+    borderWidth: 1,
+    width: "100%",
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 20,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    marginTop: 20,
+    width: '100%',
+  }
+});
