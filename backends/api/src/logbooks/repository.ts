@@ -1,10 +1,11 @@
 import { prisma } from "../configs/db.ts";
 import type { Logbook } from "../types/logbook.ts";
 import type { Logitem } from "../types/logitem.ts";
+import type { Result } from "../types/result.ts";
 
 export const getUserLogbooks = async (
   userId: string,
-): Promise<RepositoryResult<Logbook[]>> => {
+): Promise<Result<Logbook[]>> => {
   try {
     const result = await prisma.logbook.findMany({
       where: {
@@ -21,7 +22,7 @@ export const getUserLogbooks = async (
 export const createLogbook = async (
   userId: string,
   name: string,
-): Promise<RepositoryResult<Logbook>> => {
+): Promise<Result<Logbook>> => {
   try {
     const result = await prisma.logbook.create({
       data: {
@@ -39,7 +40,7 @@ export const createLogbook = async (
 export const getLogbook = async (
   userId: string,
   logbookId: string,
-): Promise<RepositoryResult<Logbook>> => {
+): Promise<Result<Logbook>> => {
   try {
     const result = await prisma.logbook.findUniqueOrThrow({
       where: {
@@ -58,7 +59,7 @@ export const updateLogbook = async (
   userId: string,
   logbookId: string,
   logbookName: string,
-): Promise<RepositoryResult<Logbook>> => {
+): Promise<Result<Logbook>> => {
   try {
     const result = await prisma.logbook.update({
       where: {
@@ -79,7 +80,7 @@ export const updateLogbook = async (
 export const deleteLogbook = async (
   userId: string,
   logbookId: string,
-): Promise<RepositoryResult<Logbook>> => {
+): Promise<Result<Logbook>> => {
   try {
     const result = await prisma.logbook.delete({
       where: {
@@ -94,10 +95,10 @@ export const deleteLogbook = async (
   }
 };
 
-export const getLogitems = async (
+export const getLogItems = async (
   userId: string,
   logbookId: string,
-): Promise<RepositoryResult<Logitem[]>> => {
+): Promise<Result<Logitem[]>> => {
   try {
     const result = await prisma.logitem.findMany({
       where: {
@@ -118,7 +119,7 @@ export const saveLogitems = async (
   userId: string,
   logbookId: string,
   logitems: Logitem[],
-): Promise<RepositoryResult<number>> => {
+): Promise<Result<number>> => {
   try {
     // TODO:
 
@@ -138,7 +139,7 @@ export const updateLogitem = async (
   logbookId: string,
   logitemId: string,
   logitem: Logitem,
-): Promise<RepositoryResult<Logitem>> => {
+): Promise<Result<Logitem>> => {
   try {
     const result = await prisma.logitem.update({
       where: {
@@ -157,11 +158,11 @@ export const updateLogitem = async (
   }
 };
 
-export const deleteLogitem = async (
+export const deleteLogItem = async (
   userId: string,
   logbookId: string,
   logitemId: string,
-): Promise<RepositoryResult<Logitem>> => {
+): Promise<Result<Logitem>> => {
   try {
     const result = await prisma.logitem.delete({
       where: {

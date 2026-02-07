@@ -1,7 +1,7 @@
 import * as repository from "./repository.ts";
 import type { Logitem } from "../types/logitem.ts";
 
-export const saveLogitems = async (
+export const saveLogItems = async (
   userId: string,
   logbookId: string,
   logitems: Logitem[],
@@ -22,7 +22,7 @@ export const saveLogitems = async (
   return repositoryResult;
 };
 
-export const updateLogitem = async (
+export const updateLogItem = async (
   userId: string,
   logbookId: string,
   logitemId: string,

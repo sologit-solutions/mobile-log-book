@@ -1,165 +1,217 @@
 import express from "express";
 import * as service from "./service.ts";
 import * as repository from "./repository.ts";
+import handleRequest from "../utils/requestUtils.ts";
+import idValidator from "./validators/idValidator.ts";
+import z from "zod";
 
 const router = express.Router();
 
 router.get("/", async (req, res) => {
-  const userId = req.user?.id;
+  // Define context
+  const context = {
+    res,
+    input: req.user!.id,
+    validator: idValidator,
+    fun: repository.getUserLogbooks,
+  };
 
-  if (userId) {
-    const serviceResult = await repository.getUserLogbooks(userId);
-
-    if (serviceResult.success) {
-      return res.json(serviceResult.data);
-    }
-  } else {
-    return res.status(401);
-  }
+  // Call handler
+  return await handleRequest(context);
 });
 
 router.post("/", async (req, res) => {
-  const userId = req.user?.id;
-  const logbookName = req.body?.name;
+  // Define validator
+  const validator = z.object({
+    userId: idValidator,
+    logbookName: z.coerce.string(),
+  });
 
-  if (userId && logbookName) {
-    const serviceResult = await repository.createLogbook(userId, logbookName);
+  // Define context
+  const context = {
+    res,
+    input: {
+      userId: req.user!.id,
+      logbookName: req.body!.logbookName,
+    },
+    validator,
+    fun: ({ userId, logbookName }: z.infer<typeof validator>) =>
+      repository.createLogbook(userId, logbookName),
+  };
 
-    if (serviceResult.success) {
-      return res.json(serviceResult.data);
-    }
-  } else {
-    return res.status(401);
-  }
+  // Call handler
+  return await handleRequest(context);
 });
 
 router.get("/:logbook_id", async (req, res) => {
-  const userId = req.user?.id;
-  const logbookId = req.params.logbook_id;
+  // Define validator
+  const validator = z.object({
+    userId: idValidator,
+    logbookId: idValidator,
+  });
 
-  if (userId) {
-    const serviceResult = await repository.getLogbook(userId, logbookId);
+  // Define context
+  const context = {
+    res,
+    input: {
+      userId: req.user!.id,
+      logbookId: req.params.logbook_id,
+    },
+    validator,
+    fun: ({ userId, logbookId }: z.infer<typeof validator>) =>
+      repository.getLogbook(userId, logbookId),
+  };
 
-    if (serviceResult.success) {
-      return res.json(serviceResult.data);
-    }
-  } else {
-    return res.status(401);
-  }
+  // Call handler
+  return await handleRequest(context);
 });
 
 router.put("/:logbook_id", async (req, res) => {
-  const userId = req.user?.id;
-  const logbookName = req.body?.name;
-  const logbookId = req.params.logbook_id;
+  // Define validator
+  const validator = z.object({
+    userId: idValidator,
+    logbookName: z.coerce.string(),
+    logbookId: idValidator,
+  });
 
-  if (userId && logbookName) {
-    const serviceResult = await repository.updateLogbook(
-      userId,
-      logbookId,
-      logbookName,
-    );
+  // Define context
+  const context = {
+    res,
+    input: {
+      userId: req.user!.id,
+      logbookName: req.body?.logbookName,
+      logbookId: req.params.logbook_id,
+    },
+    validator,
+    fun: ({ userId, logbookName, logbookId }: z.infer<typeof validator>) =>
+      repository.updateLogbook(userId, logbookName, logbookId),
+  };
 
-    if (serviceResult.success) {
-      return res.json(serviceResult.data);
-    }
-  } else {
-    return res.status(401);
-  }
+  // Call handler
+  return await handleRequest(context);
 });
 
 router.delete("/:logbook_id", async (req, res) => {
-  const userId = req.user?.id;
-  const logbookId = req.params.logbook_id;
+  // Define validator
+  const validator = z.object({
+    userId: idValidator,
+    logbookId: idValidator,
+  });
 
-  if (userId) {
-    const serviceResult = await repository.deleteLogbook(userId, logbookId);
+  // Define context
+  const context = {
+    res,
+    input: {
+      userId: req.user!.id,
+      logbookId: req.params.logbook_id,
+    },
+    validator,
+    fun: ({ userId, logbookId }: z.infer<typeof validator>) =>
+      repository.deleteLogbook(userId, logbookId),
+  };
 
-    if (serviceResult.success) {
-      return res.json(serviceResult.data);
-    }
-  } else {
-    return res.status(401);
-  }
+  // Call handler
+  return await handleRequest(context);
 });
 
 router.get("/:logbook_id/logs", async (req, res) => {
-  const userId = req.user?.id;
-  const logbookId = req.params.logbook_id;
+  // Define validator
+  const validator = z.object({
+    userId: idValidator,
+    logbookId: idValidator,
+  });
 
-  if (userId) {
-    const serviceResult = await repository.getLogitems(userId, logbookId);
+  // Define context
+  const context = {
+    res,
+    input: {
+      userId: req.user!.id,
+      logbookId: req.params.logbook_id,
+    },
+    validator,
+    fun: ({ userId, logbookId }: z.infer<typeof validator>) =>
+      repository.getLogItems(userId, logbookId),
+  };
 
-    if (serviceResult.success) {
-      return res.json(serviceResult.data);
-    }
-  } else {
-    return res.status(401);
-  }
+  // Call handler
+  return await handleRequest(context);
 });
 
 router.post("/:logbook_id/logs", async (req, res) => {
-  const userId = req.user?.id;
-  const logitems = req.body?.logitems;
-  const logbookId = req.params.logbook_id;
+  // Define validator
+  const validator = z.object({
+    userId: idValidator,
+    logbookId: idValidator,
+    logItems: req.body?.logItems, // TODO: logItem[] validator
+  });
 
-  if (userId) {
-    if (logitems) {
-      const serviceResult = await service.saveLogitems(
-        userId,
-        logbookId,
-        logitems,
-      );
+  // Define context
+  const context = {
+    res,
+    input: {
+      userId: req.user!.id,
+      logbookId: req.params.logbook_id,
+      logItems: req.body?.logItems,
+    },
+    validator,
+    fun: ({ userId, logbookId, logItems }: z.infer<typeof validator>) =>
+      service.saveLogItems(userId, logbookId, logItems),
+  };
 
-      if (serviceResult.success) {
-        return res.json(serviceResult.data);
-      }
-    }
-  } else {
-    return res.status(401);
-  }
+  // Call handler
+  // return await handleRequest(context);
 });
 
 router.put("/:logbook_id/logs/:item_id", async (req, res) => {
-  const userId = req.user?.id;
-  const logbookId = req.params.logbook_id;
-  const itemId = req.params.item_id;
-  const logitem = req.body?.item;
+  // Define validator
+  const validator = z.object({
+    userId: idValidator,
+    logbookId: idValidator,
+    itemId: idValidator,
+    logItem: req.body?.logItem, // TODO: logItem validator
+  });
 
-  if (userId) {
-    const serviceResult = await service.updateLogitem(
-      userId,
-      logbookId,
-      itemId,
-      logitem,
-    );
+  // Define context
+  const context = {
+    res,
+    input: {
+      userId: req.user!.id,
+      logbookId: req.params.logbook_id,
+      itemId: req.params.item_id,
+      logItem: req.body?.logItem,
+    },
+    validator,
+    fun: ({ userId, logbookId, itemId, logItem }: z.infer<typeof validator>) =>
+      service.updateLogItem(userId, logbookId, itemId, logItem),
+  };
 
-    if (serviceResult.success) {
-      return res.json(serviceResult.data);
-    }
-  } else {
-    return res.status(401);
-  }
+  // Call handler
+  // return await handleRequest(context);
 });
 
 router.delete("/:logbook_id/logs/:item_id", async (req, res) => {
-  const userId = req.user?.id;
-  const logbookId = req.params.logbook_id;
-  const itemId = req.params.item_id;
+  // Define validator
+  const validator = z.object({
+    userId: idValidator,
+    logbookId: idValidator,
+    itemId: idValidator,
+  });
 
-  if (userId) {
-    const serviceResult = await repository.deleteLogitem(
-      userId,
-      logbookId,
-      itemId,
-    );
+  // Define context
+  const context = {
+    res,
+    input: {
+      userId: req.user!.id,
+      logbookId: req.params.logbook_id,
+      itemId: req.params.item_id,
+    },
+    validator,
+    fun: ({ userId, logbookId, itemId }: z.infer<typeof validator>) =>
+      repository.deleteLogItem(userId, logbookId, itemId),
+  };
 
-    if (serviceResult.success) {
-      return res.json(serviceResult.data);
-    }
-  } else {
-    return res.status(401);
-  }
+  // Call handler
+  return await handleRequest(context);
 });
 
 export default router;
