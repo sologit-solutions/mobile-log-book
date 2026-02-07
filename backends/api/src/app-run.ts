@@ -1,9 +1,9 @@
 import app from "./app.ts";
-import { ENV, process_env } from "./configs/env.ts";
+import { ENV, processEnv } from "./configs/env.ts";
 import logger from "./utils/logger.ts";
 
 if (ENV.LOG_LEVEL == "silly") {
-  logger.silly("Process ENV", process_env);
+  logger.silly("Process ENV", processEnv);
   logger.silly("Loaded ENV", ENV);
 }
 

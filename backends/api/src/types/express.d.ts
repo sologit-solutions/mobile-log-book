@@ -1,6 +1,6 @@
 import type { User as U } from "./user.ts";
 
-export declare global {
+declare global {
   namespace Express {
     // eslint-disable-next-line @typescript-eslint/no-empty-object-type
     interface User extends Pick<U, "id"> {}

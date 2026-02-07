@@ -1,6 +1,6 @@
 import * as z from "zod";
 
-const process_env = {
+const processEnv = {
   // ADD YOUR ENVIRONMENT VARIABLES HERE
   DEVELOP: process.env.DEVELOP,
   API_PORT: process.env.API_PORT,
@@ -34,6 +34,6 @@ const envSchema = z.object({
 
 type Env = z.infer<typeof envSchema>;
 
-const ENV: Env = envSchema.parse(process_env);
+const ENV: Env = envSchema.parse(processEnv);
 
-export { process_env, ENV };
+export { processEnv, ENV };
