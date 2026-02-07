@@ -3,11 +3,12 @@ import type { User } from "./../types/user.ts";
 import * as auth from "../utils/authUtils.ts";
 import emailValidator from "./validators/emailValidator.ts";
 import { ENV } from "../configs/env.ts";
+import type { Result } from "./../types/result.ts";
 
 export const createUser = async (
-  userdata: Pick<User, "username" | "email"> & { password: string },
-) => {
-  const { password, ...fields } = userdata;
+  input: Pick<User, "username" | "email"> & { password: string },
+): Promise<Result<object>> => {
+  const { password, ...fields } = input;
 
   const user = {
     hash: await auth.hashPassword(password),
@@ -17,37 +18,56 @@ export const createUser = async (
   const result = await repository.createUser(user);
 
   if (result.success) {
+    const user = result.data;
     return {
       ...result,
-      data: auth.issueJWT(result.data?.userId, ENV.REFRESH_TOKEN_EXPIRES),
+      data: {
+        user: user,
+        refreshToken: auth.issueJWT(user.userId, ENV.REFRESH_TOKEN_EXPIRES),
+        accessToken: auth.issueJWT(user.userId, ENV.ACCESS_TOKEN_EXPIRES),
+      },
     };
   }
 
   return result;
 };
 
-export const authenticate = async (userdata: {
+export const authenticate = async (input: {
   usernameOrEmail: string;
   password: string;
-}) => {
+}): Promise<Result<object>> => {
   let user;
-  let queryResult;
-  const validationResult = emailValidator.safeParse(userdata.usernameOrEmail);
+  let result;
+  const validationResult = emailValidator.safeParse(input.usernameOrEmail);
 
   if (validationResult.success) {
-    user = { email: userdata.usernameOrEmail };
-    queryResult = await repository.getUserByEmail(user);
+    user = { email: input.usernameOrEmail };
+    result = await repository.getUserByEmail(user);
   } else {
-    user = { username: userdata.usernameOrEmail };
-    queryResult = await repository.getUserByUsername(user);
+    user = { username: input.usernameOrEmail };
+    result = await repository.getUserByUsername(user);
   }
 
-  if (queryResult.success) {
-    const { hash, ...user } = queryResult.data;
-    const verifyResult = await auth.verifyPassword(userdata.password, hash);
+  if (result.success) {
+    const { hash, isActive, updatedAt, ...user } = result.data;
+    const verifyResult = await auth.verifyPassword(input.password, hash);
 
     if (verifyResult) {
-      return auth.issueJWT(user.id, ENV.REFRESH_TOKEN_EXPIRES);
+      return {
+        success: result.success,
+        data: {
+          user: user,
+          refreshToken: auth.issueJWT(user.id, ENV.REFRESH_TOKEN_EXPIRES),
+          accessToken: auth.issueJWT(user.id, ENV.ACCESS_TOKEN_EXPIRES),
+        },
+      };
     }
+
+    return {
+      success: false,
+      error: { code: "401", message: "Incorrect username or password" },
+    };
   }
+
+  return result;
 };

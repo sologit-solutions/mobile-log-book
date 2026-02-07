@@ -1,10 +1,11 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../configs/db.ts";
 import type { User } from "../types/user.ts";
+import type { Result } from "../types/result.ts";
 
 export const createUser = async (
   user: Pick<User, "username" | "email" | "hash">,
-): Promise<RepositoryResult<{ userId: string }>> => {
+): Promise<Result<{ userId: string }>> => {
   try {
     const data = await prisma.user.create({
       data: user,
@@ -46,7 +47,7 @@ export const createUser = async (
 
 export const getUserByEmail = async (
   user: Partial<Pick<User, "username" | "email">>,
-): Promise<RepositoryResult<User>> => {
+): Promise<Result<User>> => {
   try {
     const result = await prisma.user.findFirstOrThrow({
       where: { email: user.email },
@@ -61,7 +62,7 @@ export const getUserByEmail = async (
 
 export const getUserByUsername = async (
   user: Partial<Pick<User, "username" | "email">>,
-): Promise<RepositoryResult<User>> => {
+): Promise<Result<User>> => {
   try {
     const result = await prisma.user.findFirstOrThrow({
       where: { username: user.username },
