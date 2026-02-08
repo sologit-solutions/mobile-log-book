@@ -214,4 +214,15 @@ router.delete("/:logbook_id/logs/:item_id", async (req, res) => {
   return await handleRequest(context);
 });
 
+// Submit password reset
+router.get("/sync", async (req, res ) => {
+  // Define validator
+  // Use query parameter "since"
+
+  // Define context
+
+  // Call handler
+  return res.status(501);
+});
+
 export default router;
