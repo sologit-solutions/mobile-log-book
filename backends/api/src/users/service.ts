@@ -66,6 +66,7 @@ export const authenticate = async (input: {
 
     return {
       success: false,
+      status: 401,
       error: { code: "401", message: "Incorrect username or password" },
     };
   }

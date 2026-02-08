@@ -3,6 +3,7 @@ import * as service from "./service.ts";
 import signupValidator from "./validators/signupValidator.ts";
 import loginValidator from "./validators/loginValidator.ts";
 import handleRequest from "../utils/requestUtils.ts";
+import requireAuth from "../middleware/requireAuth.ts";
 
 const router = Router();
 
@@ -79,10 +80,30 @@ router.post("/login", async (req, res) => {
  * access token. This is done by sending a request to a /auth/refresh
  * route when the token is about to expire.
  */
-router.post("/logout", async (req, res) => {
+router.post("/logout", requireAuth, async (req, res) => {
   // TODO: Implementation
   // TODO: Update documentation when implemented.
-  return res;
+  return res.status(501);
+});
+
+// Returns the logged in users data
+router.get("/", requireAuth, async (req, res ) => {
+  return res.status(501);
+});
+
+// Request access token refresh
+router.post("/refresh", requireAuth, async (req, res ) => {
+  return res.status(501);
+});
+
+// Request password reset
+router.post("/password-reset", async (req, res ) => {
+  return res.status(501);
+});
+
+// Submit password reset
+router.put("/password-reset", async (req, res ) => {
+  return res.status(501);
 });
 
 export default router;
