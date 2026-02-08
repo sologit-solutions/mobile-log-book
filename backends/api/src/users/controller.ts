@@ -8,7 +8,7 @@ import requireAuth from "../middleware/requireAuth.ts";
 const router = Router();
 
 /**
- * Route: /auth/signup
+ * Route: /users/signup
  *
  * The route expects the request body to contain the fields
  * username, email and password.
@@ -37,7 +37,7 @@ router.post("/signup", async (req, res) => {
 });
 
 /**
- * Route: /auth/login
+ * Route: /users/login
  *
  * The route expects the request body to contain a username or and email
  * along with a password. The input in both fields should at least have
@@ -64,7 +64,7 @@ router.post("/login", async (req, res) => {
 });
 
 /**
- * Route: /auth/logout
+ * Route: /users/logout
  *
  * Not a priority.
  * The way logouts/sessions are handled is by using refresh tokens.
