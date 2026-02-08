@@ -61,6 +61,12 @@ const handleRequest = async <T>(
       // Call the service function
       serviceResult = await fun();
     }
+
+    // Check if the service set custom status code
+    if (serviceResult.status) {
+      res.status(serviceResult.status);
+    }
+
     // Check if the service function completed successfully
     if (serviceResult.success) {
       return res.json(serviceResult);

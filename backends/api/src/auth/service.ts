@@ -21,6 +21,7 @@ export const createUser = async (
     const user = result.data;
     return {
       ...result,
+      status: 201,
       data: {
         user: user,
         refreshToken: auth.issueJWT(user.userId, ENV.REFRESH_TOKEN_EXPIRES),
