@@ -31,7 +31,7 @@ export const createLogbook = async (
       },
     });
 
-    return { success: true, data: result };
+    return { success: true, status: 201, data: result };
   } catch (e) {
     return { success: false, error: { message: "Unknown error" } };
   }
@@ -115,7 +115,7 @@ export const getLogItems = async (
   }
 };
 
-export const saveLogitems = async (
+export const createLogitems = async (
   userId: string,
   logbookId: string,
   logitems: Logitem[],
@@ -128,7 +128,7 @@ export const saveLogitems = async (
     // Step 3: Client picks the preferred version
     //         rejecting changes or updating the updatedAt.
 
-    return { success: true, data: 0 };
+    return { success: true, status: 201, data: 0 };
   } catch (e) {
     return { success: false, error: { message: "Unknown error" } };
   }

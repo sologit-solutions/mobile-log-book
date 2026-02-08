@@ -142,7 +142,7 @@ router.post("/:logbook_id/logs", async (req, res) => {
   const validator = z.object({
     userId: idValidator,
     logbookId: idValidator,
-    logItems: req.body?.logItems, // TODO: logItem[] validator
+    logitems: req.body?.logitems, // TODO: logitem[] validator
   });
 
   // Define context
@@ -151,11 +151,11 @@ router.post("/:logbook_id/logs", async (req, res) => {
     input: {
       userId: req.user!.id,
       logbookId: req.params.logbook_id,
-      logItems: req.body?.logItems,
+      logitems: req.body?.logitems,
     },
     validator,
-    fun: ({ userId, logbookId, logItems }: z.infer<typeof validator>) =>
-      service.saveLogItems(userId, logbookId, logItems),
+    fun: ({ userId, logbookId, logitems }: z.infer<typeof validator>) =>
+      service.createLogitems(userId, logbookId, logitems),
   };
 
   // Call handler
@@ -168,7 +168,7 @@ router.put("/:logbook_id/logs/:item_id", async (req, res) => {
     userId: idValidator,
     logbookId: idValidator,
     itemId: idValidator,
-    logItem: req.body?.logItem, // TODO: logItem validator
+    logitem: req.body?.logitem, // TODO: logItem validator
   });
 
   // Define context
@@ -178,11 +178,11 @@ router.put("/:logbook_id/logs/:item_id", async (req, res) => {
       userId: req.user!.id,
       logbookId: req.params.logbook_id,
       itemId: req.params.item_id,
-      logItem: req.body?.logItem,
+      logItem: req.body?.logitem,
     },
     validator,
-    fun: ({ userId, logbookId, itemId, logItem }: z.infer<typeof validator>) =>
-      service.updateLogItem(userId, logbookId, itemId, logItem),
+    fun: ({ userId, logbookId, itemId, logitem }: z.infer<typeof validator>) =>
+      service.updateLogItem(userId, logbookId, itemId, logitem),
   };
 
   // Call handler

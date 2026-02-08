@@ -1,7 +1,7 @@
 import * as repository from "./repository.ts";
 import type { Logitem } from "../types/logitem.ts";
 
-export const saveLogItems = async (
+export const createLogitems = async (
   userId: string,
   logbookId: string,
   logitems: Logitem[],
@@ -13,7 +13,7 @@ export const saveLogItems = async (
   // Step 3: Client picks the preferred version
   //         rejecting changes or updating the updatedAt.
 
-  const repositoryResult = await repository.saveLogitems(
+  const repositoryResult = await repository.createLogitems(
     userId,
     logbookId,
     logitems,
