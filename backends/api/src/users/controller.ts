@@ -31,7 +31,7 @@ router.post("/signup", async (req, res) => {
     validator: signupValidator,
     fun: service.createUser,
   };
-  
+
   // Call handler
   return await handleRequest(context);
 });
@@ -58,7 +58,7 @@ router.post("/login", async (req, res) => {
     validator: loginValidator,
     fun: service.authenticate,
   };
-  
+
   // Call handler
   return await handleRequest(context);
 });
@@ -87,22 +87,22 @@ router.post("/logout", requireAuth, async (req, res) => {
 });
 
 // Returns the logged in users data
-router.get("/", requireAuth, async (req, res ) => {
+router.get("/", requireAuth, async (req, res) => {
   return res.status(501);
 });
 
 // Request access token refresh
-router.post("/refresh", requireAuth, async (req, res ) => {
+router.post("/refresh", requireAuth, async (req, res) => {
   return res.status(501);
 });
 
 // Request password reset
-router.post("/password-reset", async (req, res ) => {
+router.post("/password-reset", async (req, res) => {
   return res.status(501);
 });
 
 // Submit password reset
-router.put("/password-reset", async (req, res ) => {
+router.put("/password-reset", async (req, res) => {
   return res.status(501);
 });
 

@@ -21,12 +21,12 @@ type HandlerContext<T> = ContextWithInput<T> | ContextWithoutInput;
  * Takes a context object as an input. The context of the
  * request contains the response object and the function
  * that should be called.
- * 
+ *
  * The handlers context can optionally have an input field
  * which defines the input to the function that is to be
  * called, along with a mandatory ZodType validator to
  * validate the input object.
- * 
+ *
  * If an error occurs in the function call, the function
  * catches the error and returns a 500 response to the
  * client and logs the errors.

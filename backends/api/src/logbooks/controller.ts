@@ -215,7 +215,7 @@ router.delete("/:logbook_id/logs/:item_id", async (req, res) => {
 });
 
 // Submit password reset
-router.get("/sync", async (req, res ) => {
+router.get("/sync", async (req, res) => {
   // Define validator
   // Use query parameter "since"
 
