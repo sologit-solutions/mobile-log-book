@@ -6,22 +6,5 @@ model Logbook {
   logitems Logitem[]
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
-}
-
-model Logitem {
-  id String @id @default(uuid())
-  logbook Logbook @relation(fields: [logbookId], references: [id], onDelete: Cascade)
-  logbookId String
-  title String @db.VarChar(64)
-  body String? @db.VarChar(1024)
-  crew Int?
-  latitude Float?
-  longitude Float?
-  course Float?
-  speedOverGround Float?
-  speedThroughWater Float?
-  windSpeed Float?
-  barometer Float?
-  updatedAt DateTime @updatedAt
-  createdAt DateTime @default(now())
+  version Int @default(0)
 }
