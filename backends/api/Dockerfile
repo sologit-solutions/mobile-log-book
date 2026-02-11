@@ -9,6 +9,7 @@ RUN npx prisma generate
 
 FROM base AS builder
 RUN npm run build
+RUN npx prisma generate
 
 FROM node:22.20.0-alpine3.21 AS runtime
 WORKDIR /app
@@ -16,5 +17,4 @@ COPY --from=builder /app/dist .
 COPY package*.json .
 COPY prisma .
 RUN npm ci --omit=dev
-RUN npx prisma generate
 CMD ["npm", "run", "start:prod"]

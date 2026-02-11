@@ -1,0 +1,1 @@
+cd backends/api && npm i && npx prisma generate && ../../mobile && npm i

@@ -1,10 +1,19 @@
 import express from "express";
-import authRouter from "./auth/routes.ts";
-import logbookRouter from "./logbooks/routes.ts";
+import cors from "cors";
+import passport from "./configs/passport.ts";
+import usersRouter from "./users/controller.ts";
+import logbookRouter from "./logbooks/controller.ts";
+import requireAuth from "./middleware/requireAuth.ts";
+import requestLogging from "./middleware/requestLogging.ts";
 
 const app = express();
 
-app.use("/auth", authRouter);
-app.use("/logbooks", logbookRouter);
+app.use(cors());
+app.use(express.json());
+app.use(passport.initialize());
+app.use(requestLogging);
+
+app.use("/users", usersRouter);
+app.use("/logbooks", requireAuth, logbookRouter);
 
 export default app;

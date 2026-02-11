@@ -1,5 +1,0 @@
-{
-    "scripts": {
-        "setup": "cd backends/api && npm i && npx prisma generate"
-    }
-}
