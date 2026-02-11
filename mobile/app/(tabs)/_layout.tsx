@@ -1,5 +1,5 @@
-import TabBar from "@/components/tabBar";
-import { useOwnTheme } from "@/context/themeContext";
+import TabBar from "@/src/components/TabBar";
+import { useOwnTheme } from "@/src/context/ThemeContext";
 import { Tabs } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
@@ -23,13 +23,13 @@ export default function LayoutContent() {
             }}
           />
           <Tabs.Screen
-            name="index"
+            name="home"
             options={{
               title: "Add event",
             }}
           />
           <Tabs.Screen
-            name="eventList"
+            name="events"
             options={{
               title: "Event list",
             }}
