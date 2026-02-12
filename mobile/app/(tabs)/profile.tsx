@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Modal, FlatList, TouchableOpacity, ScrollView, Pressable, Platform, KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback } from "react-native";
+import { View, Text, StyleSheet, Modal, FlatList, TouchableOpacity, ScrollView, Pressable, Platform, KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen } from "@/src/components/Screen";
 import { Button } from "@/src/components/Button";
@@ -41,11 +41,19 @@ export default function Profile() {
     };
 
     const handleAddVessel = () => {
-        if (!newVessel.name) return;
+        if (!newVessel.name) {
+            Alert.alert("Required", "Please enter a vessel name.");
+            return;
+        }
+
         addVesselMutation.mutate(newVessel, {
             onSuccess: () => {
                 setAddVesselOpen(false);
                 setNewVessel({ name: "", type: "", registration: "" });
+            },
+            onError: (error) => {
+                console.error("Failed to add vesel: ", error);
+                Alert.alert("Error", "Could not save vessel. Check logs for details.");
             }
         });
     };
