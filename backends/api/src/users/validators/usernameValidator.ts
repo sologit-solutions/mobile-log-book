@@ -1,7 +1,7 @@
 import * as z from "zod";
 
-const usernameValidator = z.coerce
-  .string()
+const usernameValidator = z
+  .string({ message: "Username must contain at least 3 characters." })
   .min(3, { message: "Username must contain at least 3 characters." })
   .max(20, { message: "Username cannot exceed 20 characters." })
   .regex(
