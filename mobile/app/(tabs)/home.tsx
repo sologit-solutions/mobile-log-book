@@ -7,7 +7,7 @@ import { useVesselStore } from "@/src/store/vesselStore";
 import { useButtonStore } from "@/src/store/buttonStore"; // <--- Import Store
 import { useRouter } from "expo-router";
 import { useAddLog } from "@/src/features/logbook/hooks";
-import * as Location from 'expo-location';
+import { getCurrentLocation } from "@/src/utils/location";
 
 export default function Home() {
     const { theme } = useOwnTheme();
@@ -27,32 +27,26 @@ export default function Home() {
 
         setLocationLoading(true);
         try {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
-                Alert.alert("Permission denied", "Location is needed to log entries.");
-                setLocationLoading(false);
-                return;
-            }
-
-            const loc = await Location.getCurrentPositionAsync({});
+            const loc = await getCurrentLocation();
 
             addLogMutation.mutate({
                 vesselId: currentVessel.id,
-                //timestamp: new Date().toISOString(),
                 lat: loc.coords.latitude,
                 lon: loc.coords.longitude,
-                entry: actionLabel // Using the dynamic label as the entry text
+                entry: actionLabel
             }, {
                 onSuccess: () => {
                     Alert.alert("Logged", `${actionLabel} recorded.`);
                 },
                 onError: (err) => {
+                    console.error(err);
                     Alert.alert("Error", "Failed to save log.");
                 }
             });
 
-        } catch (error) {
-            Alert.alert("Error", "Could not fetch location.");
+        } catch (error: any) {
+            // Now we catch the specific error from our utility
+            Alert.alert("Location Error", error.message || "Could not fetch location.");
         } finally {
             setLocationLoading(false);
         }

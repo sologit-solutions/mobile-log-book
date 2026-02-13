@@ -1,27 +1,53 @@
+import 'react-native-get-random-values';
 import { type SQLiteDatabase } from 'expo-sqlite';
 import { v4 as uuidv4 } from 'uuid';
-import 'react-native-get-random-values';
 import { DBLog, DBVessel } from '@/src/types/db';
 
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {
-    // ... (Keep your existing migration logic exactly as is)
-    const DATABASE_VERSION = 3;
-    // ... (Keep the rest of the migration code)
+    const DATABASE_VERSION = 1;
+
     const versionRow = await db.getFirstAsync<{ user_version: number }>(
         'PRAGMA user_version'
     );
     const currentDbVersion = versionRow?.user_version ?? 0;
 
+    console.log(`Current DB Version: ${currentDbVersion}. Target Version: ${DATABASE_VERSION}`);
+
     if (currentDbVersion >= DATABASE_VERSION) {
+        console.log("Database is up to date.");
         return;
     }
 
-    // ... (Keep existing migration SQL execution)
-    // Note: If you lost the original code, ensure the tables 'logs' and 'vessels' are created here.
-    // I am omitting the full migration body here to save space, BUT KEEP IT IN YOUR FILE.
+    console.log("Starting Database Migration...");
 
-    // ... (End of migration logic)
+    await db.execAsync('PRAGMA foreign_keys = ON');
+
+    await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS vessels (
+            id TEXT PRIMARY KEY NOT NULL,
+            name TEXT NOT NULL,
+            type TEXT,
+            registration TEXT,
+            created_at TEXT NOT NULL
+        );
+    `);
+
+    // Create Logs Table
+    await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS logs (
+            id TEXT PRIMARY KEY NOT NULL,
+            entry TEXT NOT NULL,
+            latitude REAL NOT NULL,
+            longitude REAL NOT NULL,
+            timestamp TEXT NOT NULL,
+            vessel_id TEXT,
+            FOREIGN KEY (vessel_id) REFERENCES vessels(id) ON DELETE SET NULL
+        );
+    `);
+
+    // Update version
     await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);
+    console.log("Database Migration Complete.");
 }
 
 // --- LOG FUNCTIONS ---
@@ -70,14 +96,12 @@ export const updateLog = async (
     lat?: number,
     lon?: number
 ) => {
-    // If we have the extra data, update everything.
     if (timestamp !== undefined && lat !== undefined && lon !== undefined) {
         return await db.runAsync(
             'UPDATE logs SET entry = ?, timestamp = ?, latitude = ?, longitude = ? WHERE id = ?',
             [entry, timestamp, lat, lon, id]
         );
     } else {
-        // Fallback: only update the text entry (legacy behavior)
         return await db.runAsync(
             'UPDATE logs SET entry = ? WHERE id = ?',
             [entry, id]
@@ -98,9 +122,10 @@ export async function addVessel(
     registration: string
 ): Promise<string> {
     const id = uuidv4();
+    const createdAt = new Date().toISOString();
     await db.runAsync(
-        `INSERT INTO vessels (id, name, type, registration) VALUES (?, ?, ?, ?)`,
-        id, name, type, registration
+        `INSERT INTO vessels (id, name, type, registration, created_at) VALUES (?, ?, ?, ?, ?)`,
+        id, name, type, registration, createdAt
     );
     return id;
 }
