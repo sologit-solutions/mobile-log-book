@@ -5,14 +5,35 @@ import { Screen } from "@/src/components/Screen";
 import { Card } from "@/src/components/Card";
 import { useOwnTheme } from "@/src/context/ThemeContext";
 import { useLogs } from "@/src/features/logbook/hooks";
+import { useVesselStore } from "@/src/store/vesselStore";
 import { DBLog } from "@/src/types/db";
+import { Button } from "@/src/components/Button";
 
 export default function EventList() {
     const { theme } = useOwnTheme();
     const router = useRouter();
+	const { currentVessel } = useVesselStore();
 
     // React Query handles loading/error/data automatically
-    const { data: logs, isLoading } = useLogs();
+    const { data: logs, isLoading } = useLogs(currentVessel?.id);
+
+	// Show message if no vessel is selected
+	if (!currentVessel) {
+        return (
+            <Screen style={styles.centerContainer}>
+                <Text style={[styles.emptyText, { color: theme.colors.textPrimary }]}>
+                    No Vessel Selected
+                </Text>
+                <Text style={{ color: theme.colors.textSecondary, textAlign: 'center', marginBottom: 20 }}>
+                    Please select a vessel to view its logbook.
+                </Text>
+                <Button
+                    title="Go to Profile"
+                    onPress={() => router.navigate("/(tabs)/profile")}
+                />
+            </Screen>
+        );
+    }
 
     const renderItem = ({ item }: { item: DBLog }) => (
         <Card
@@ -52,7 +73,9 @@ export default function EventList() {
                     contentContainerStyle={styles.listContent}
                     ListEmptyComponent={
                         <View style={styles.centerContainer}>
-                            <Text style={{ color: theme.colors.textSecondary }}>No events found.</Text>
+                            <Text style={{ color: theme.colors.textSecondary }}>
+								No events recorded for {currentVessel.name}.
+							</Text>
                         </View>
                     }
                 />
@@ -66,7 +89,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        marginTop: 50,
+        //marginTop: 50,
     },
     listContent: {
         padding: 16,
@@ -84,6 +107,11 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: "600",
         marginBottom: 8,
+    },
+	emptyText: {
+        fontSize: 20,
+        fontWeight: "bold",
+        marginBottom: 10,
     },
     dateText: {
         fontSize: 12,
