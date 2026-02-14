@@ -53,8 +53,11 @@ export default function EventList() {
             <Text style={[styles.entryText, { color: theme.colors.textPrimary }]}>
                 {item.entry}
             </Text>
-            <Text style={[styles.coordText, { color: theme.colors.textSecondary }]}>
-                Lat: {item.latitude.toFixed(4)}, Lon: {item.longitude.toFixed(4)}
+			<Text style={[styles.coordText, { color: theme.colors.textSecondary }]}>
+                {(item.latitude === 0 && item.longitude === 0)
+                    ? "No Location Data"
+                    : `Lat: ${item.latitude.toFixed(8)}, Lon: ${item.longitude.toFixed(8)}`
+                }
             </Text>
         </Card>
     );
