@@ -3,56 +3,49 @@ import type { Logbook } from "../types/logbook.ts";
 import type { Logitem } from "../types/logitem.ts";
 import type { Result } from "../types/result.ts";
 
+export const getLogbookVersion = async (
+  userId: string,
+  logbookId: string,
+) => {};
+
 export const getUserLogbooks = async (
   userId: string,
 ): Promise<Result<Logbook[]>> => {
-  try {
-    const result = await prisma.logbook.findMany({
-      where: {
-        ownerId: userId,
-      },
-    });
+  const result = await prisma.logbook.findMany({
+    where: {
+      ownerId: userId,
+    },
+  });
 
-    return { success: true, data: result };
-  } catch (e) {
-    return { success: false, error: { message: "Unknown error" } };
-  }
+  return { success: true, data: result };
 };
 
 export const createLogbook = async (
   userId: string,
   name: string,
 ): Promise<Result<Logbook>> => {
-  try {
-    const result = await prisma.logbook.create({
-      data: {
-        ownerId: userId,
-        name: name,
-      },
-    });
+  const result = await prisma.logbook.create({
+    data: {
+      ownerId: userId,
+      name: name,
+    },
+  });
 
-    return { success: true, status: 201, data: result };
-  } catch (e) {
-    return { success: false, error: { message: "Unknown error" } };
-  }
+  return { success: true, status: 201, data: result };
 };
 
 export const getLogbook = async (
   userId: string,
   logbookId: string,
 ): Promise<Result<Logbook>> => {
-  try {
-    const result = await prisma.logbook.findUniqueOrThrow({
-      where: {
-        id: logbookId,
-        ownerId: userId,
-      },
-    });
+  const result = await prisma.logbook.findUniqueOrThrow({
+    where: {
+      id: logbookId,
+      ownerId: userId,
+    },
+  });
 
-    return { success: true, data: result };
-  } catch (e) {
-    return { success: false, error: { message: "Unknown error" } };
-  }
+  return { success: true, data: result };
 };
 
 export const updateLogbook = async (
@@ -60,59 +53,47 @@ export const updateLogbook = async (
   logbookId: string,
   logbookName: string,
 ): Promise<Result<Logbook>> => {
-  try {
-    const result = await prisma.logbook.update({
-      where: {
-        id: logbookId,
-        ownerId: userId,
-      },
-      data: {
-        name: logbookName,
-      },
-    });
+  const result = await prisma.logbook.update({
+    where: {
+      id: logbookId,
+      ownerId: userId,
+    },
+    data: {
+      name: logbookName,
+    },
+  });
 
-    return { success: true, data: result };
-  } catch (e) {
-    return { success: false, error: { message: "Unknown error" } };
-  }
+  return { success: true, data: result };
 };
 
 export const deleteLogbook = async (
   userId: string,
   logbookId: string,
 ): Promise<Result<Logbook>> => {
-  try {
-    const result = await prisma.logbook.delete({
-      where: {
-        id: logbookId,
-        ownerId: userId,
-      },
-    });
+  const result = await prisma.logbook.delete({
+    where: {
+      id: logbookId,
+      ownerId: userId,
+    },
+  });
 
-    return { success: true, data: result };
-  } catch (e) {
-    return { success: false, error: { message: "Unknown error" } };
-  }
+  return { success: true, data: result };
 };
 
 export const getLogItems = async (
   userId: string,
   logbookId: string,
 ): Promise<Result<Logitem[]>> => {
-  try {
-    const result = await prisma.logitem.findMany({
-      where: {
-        logbookId: logbookId,
-        logbook: {
-          ownerId: userId,
-        },
+  const result = await prisma.logitem.findMany({
+    where: {
+      logbookId: logbookId,
+      logbook: {
+        ownerId: userId,
       },
-    });
+    },
+  });
 
-    return { success: true, data: result };
-  } catch (e) {
-    return { success: false, error: { message: "Unknown error" } };
-  }
+  return { success: true, data: result };
 };
 
 export const createLogitems = async (
@@ -120,18 +101,14 @@ export const createLogitems = async (
   logbookId: string,
   logitems: Logitem[],
 ): Promise<Result<number>> => {
-  try {
-    // TODO:
+  // TODO:
 
-    // Step 1: Validate that ALL logitems in list are the latest version. If true, save.
-    // Step 2: If false, return error with conflicting items.
-    // Step 3: Client picks the preferred version
-    //         rejecting changes or updating the updatedAt.
+  // Step 1: Validate that ALL logitems in list are the latest version. If true, save.
+  // Step 2: If false, return error with conflicting items.
+  // Step 3: Client picks the preferred version
+  //         rejecting changes or updating the updatedAt.
 
-    return { success: true, status: 201, data: 0 };
-  } catch (e) {
-    return { success: false, error: { message: "Unknown error" } };
-  }
+  return { success: true, status: 201, data: 0 };
 };
 
 export const updateLogitem = async (
@@ -140,22 +117,18 @@ export const updateLogitem = async (
   logitemId: string,
   logitem: Logitem,
 ): Promise<Result<Logitem>> => {
-  try {
-    const result = await prisma.logitem.update({
-      where: {
-        id: logitemId,
-        logbookId: logbookId,
-        logbook: {
-          ownerId: userId,
-        },
+  const result = await prisma.logitem.update({
+    where: {
+      id: logitemId,
+      logbookId: logbookId,
+      logbook: {
+        ownerId: userId,
       },
-      data: logitem,
-    });
+    },
+    data: logitem,
+  });
 
-    return { success: true, data: result };
-  } catch (e) {
-    return { success: false, error: { message: "Unknown error" } };
-  }
+  return { success: true, data: result };
 };
 
 export const deleteLogItem = async (
@@ -163,19 +136,15 @@ export const deleteLogItem = async (
   logbookId: string,
   logitemId: string,
 ): Promise<Result<Logitem>> => {
-  try {
-    const result = await prisma.logitem.delete({
-      where: {
-        id: logitemId,
-        logbookId: logbookId,
-        logbook: {
-          ownerId: userId,
-        },
+  const result = await prisma.logitem.delete({
+    where: {
+      id: logitemId,
+      logbookId: logbookId,
+      logbook: {
+        ownerId: userId,
       },
-    });
+    },
+  });
 
-    return { success: true, data: result };
-  } catch (e) {
-    return { success: false, error: { message: "Unknown error" } };
-  }
+  return { success: true, data: result };
 };
