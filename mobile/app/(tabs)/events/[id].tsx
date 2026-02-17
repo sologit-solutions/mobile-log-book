@@ -5,7 +5,8 @@ import { Screen } from "@/src/components/Screen";
 import { Button } from "@/src/components/Button";
 import { Input } from "@/src/components/Input";
 import { useOwnTheme } from "@/src/context/ThemeContext";
-import { useLog, useUpdateLog, useDeleteLog } from "@/src/features/logbook/hooks";
+import { useLogItem, useUpdateLogItem, useDeleteLogItem } from "@/src/features/logbook/hooks";
+import { useLogbookStore } from "@/src/store/logbookStore";
 
 export default function EventDetail() {
     const { id } = useLocalSearchParams();
@@ -15,33 +16,22 @@ export default function EventDetail() {
     const router = useRouter();
 
     // Data Hooks
-    const { data: log, isLoading } = useLog(logId!);
-    const updateMutation = useUpdateLog();
-    const deleteMutation = useDeleteLog();
+    const { currentLogbook } = useLogbookStore();
+    const { data: log, isLoading } = useLogItem(logId!);
+    const updateMutation = useUpdateLogItem();
+    const deleteMutation = useDeleteLogItem();
 
     // Form State
-    const [entryText, setEntryText] = useState("");
-    const [dateStr, setDateStr] = useState("");
-    const [timeStr, setTimeStr] = useState("");
+    const [titleText, setTitleText] = useState("");
+    const [bodyText, setBodyText] = useState("");
     const [latStr, setLatStr] = useState("");
     const [lonStr, setLonStr] = useState("");
 
     // Sync state when data loads
     useEffect(() => {
         if (log) {
-            setEntryText(log.entry);
-            const d = new Date(log.timestamp);
-
-            // Format to YYYY-MM-DD
-            // simple trick: use ISO string and split it
-            const isoDate = d.toISOString().split('T')[0];
-            setDateStr(isoDate);
-
-            // Format to HH:mm
-            // extract the first 5 chars of the time part (e.g., "14:30")
-            const isoTime = d.toTimeString().slice(0, 5);
-            setTimeStr(isoTime);
-
+            setTitleText(log.title);
+            setBodyText(log.body || "");
             setLatStr(String(log.latitude));
             setLonStr(String(log.longitude));
         }
@@ -50,17 +40,7 @@ export default function EventDetail() {
     const handleUpdate = () => {
         if (!logId) return;
 
-        // 1. Validate & Parse Date/Time
-        // Construct a standard ISO-like string: "2026-02-05T14:30:00"
-        const combinedString = `${dateStr}T${timeStr}:00`;
-        const newTimestamp = new Date(combinedString);
-
-        if (isNaN(newTimestamp.getTime())) {
-            Alert.alert("Invalid Date/Time", "Please use YYYY-MM-DD for date and HH:MM for time.");
-            return;
-        }
-
-        // 2. Validate & Parse Location
+        // Validate & Parse Location
         const newLat = parseFloat(latStr);
         const newLon = parseFloat(lonStr);
 
@@ -69,12 +49,11 @@ export default function EventDetail() {
             return;
         }
 
-        // 3. Send Update
         updateMutation.mutate(
             {
                 id: logId,
-                entry: entryText,
-                timestamp: newTimestamp.toISOString(),
+                title: titleText,
+                body: bodyText.trim() === "" ? null : bodyText,
                 lat: newLat,
                 lon: newLon
             },
@@ -147,30 +126,16 @@ export default function EventDetail() {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    {/* Vessel Name (Read Only) */}
+                    {/* Logbook Name (Read Only) */}
                     <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Vessel</Text>
                     <View style={[styles.readOnlyField, { backgroundColor: theme.colors.surface, borderColor: theme.colors.surface }]}>
-                        <Text style={{ color: theme.colors.textPrimary, fontSize: 16 }}>{log.vessel_name || "Unknown Vessel"}</Text>
+                        <Text style={{ color: theme.colors.textPrimary, fontSize: 16 }}>{currentLogbook?.name || "Unknown Logbook"}</Text>
                     </View>
 
-                    {/* Date & Time Row */}
-                    <View style={styles.row}>
-                        <View style={{ flex: 1, marginRight: 10 }}>
-                            <Input
-                                label="Date"
-                                value={dateStr}
-                                onChangeText={setDateStr}
-                                placeholder="YYYY-MM-DD" // Updated placeholder
-                            />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Input
-                                label="Time"
-                                value={timeStr}
-                                onChangeText={setTimeStr}
-                                placeholder="HH:MM" // Updated placeholder
-                            />
-                        </View>
+                    {/* Timestamp (Read Only) */}
+                    <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Event Time</Text>
+                    <View style={[styles.readOnlyField, { backgroundColor: theme.colors.surface, borderColor: theme.colors.surface }]}>
+                        <Text style={{ color: theme.colors.textPrimary, fontSize: 16 }}>{new Date(log.created_at).toLocaleString()}</Text>
                     </View>
 
                     {/* Lat & Lon Row */}
@@ -195,9 +160,18 @@ export default function EventDetail() {
 
                     <Input
                         label="Activity Title"
-                        value={entryText}
-                        onChangeText={setEntryText}
+                        value={titleText}
+                        onChangeText={setTitleText}
                         style={{ height: 55 }}
+                    />
+
+                    {/* New Optional Body Input */}
+                    <Input
+                        label="Detailed Log (Optional)"
+                        value={bodyText}
+                        onChangeText={setBodyText}
+                        multiline
+                        style={{ height: 120, textAlignVertical: 'top' }}
                     />
 
                     {/* Spacer increased to ensure content isn't hidden behind the floating button */}
@@ -219,7 +193,6 @@ export default function EventDetail() {
 }
 
 const styles = StyleSheet.create({
-    // SHARED BUTTON STYLES
     headerBtn: {
         position: 'absolute',
         top: 0,
@@ -256,7 +229,6 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         textAlign: 'center',
     },
-    // SCROLL STYLES
     scrollContent: {
         paddingHorizontal: 20,
         paddingTop: 10,
@@ -278,9 +250,7 @@ const styles = StyleSheet.create({
     row: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        // inputs inside row handle their own margins usually, but we ensure structure here
     },
-    // FLOATING FOOTER STYLES
     stickyFooter: {
         position: 'absolute',
         bottom: 100,

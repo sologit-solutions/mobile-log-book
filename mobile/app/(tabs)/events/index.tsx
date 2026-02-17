@@ -8,18 +8,18 @@ import * as Sharing from 'expo-sharing';
 import { Screen } from "@/src/components/Screen";
 import { Card } from "@/src/components/Card";
 import { useOwnTheme } from "@/src/context/ThemeContext";
-import { useLogs } from "@/src/features/logbook/hooks";
-import { useVesselStore } from "@/src/store/vesselStore";
-import { DBLog } from "@/src/types/db";
+import { useLogItems } from "@/src/features/logbook/hooks";
+import { useLogbookStore } from "@/src/store/logbookStore";
+import { DBLogItem } from "@/src/types/db";
 import { Button } from "@/src/components/Button";
 
 export default function EventList() {
     const { theme } = useOwnTheme();
     const router = useRouter();
-	const { currentVessel } = useVesselStore();
+	const { currentLogbook } = useLogbookStore();
 
     // React Query handles loading/error/data automatically
-    const { data: logs, isLoading } = useLogs(currentVessel?.id);
+    const { data: logs, isLoading } = useLogItems(currentLogbook?.id);
 
 const handleExport = async () => {
         if (!logs || logs.length === 0) {
@@ -28,10 +28,10 @@ const handleExport = async () => {
         }
 
         try {
-            let csvContent = "Date,Time,Event,Latitude,Longitude\n";
+            let csvContent = "Date,Time,Event,Details,Latitude,Longitude\n";
 
             logs.forEach((log) => {
-                const dateObj = new Date(log.timestamp);
+                const dateObj = new Date(log.created_at);
 
                 const year = dateObj.getFullYear();
                 const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -41,12 +41,13 @@ const handleExport = async () => {
 
                 const timeStr = dateObj.toTimeString().slice(0, 5);
 
-                const cleanEntry = log.entry.replace(/,/g, " ");
+				const cleanTitle = log.title.replace(/,/g, " ");
+                const cleanBody = log.body ? log.body.replace(/,/g, " ") : "";
 
-                csvContent += `${dateStr},${timeStr},${cleanEntry},${log.latitude},${log.longitude}\n`;
+                csvContent += `${dateStr},${timeStr},${cleanTitle},${cleanBody},${log.latitude},${log.longitude}\n`;
             });
 
-            const safeName = currentVessel?.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() || "logs";
+            const safeName = currentLogbook?.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() || "logs";
 
             if (Platform.OS === 'android') {
                 const directory = await Directory.pickDirectoryAsync();
@@ -69,7 +70,7 @@ const handleExport = async () => {
                 if (await Sharing.isAvailableAsync()) {
                     await Sharing.shareAsync(file.uri, {
                         mimeType: 'text/csv',
-                        dialogTitle: `Export Logs for ${currentVessel?.name}`
+                        dialogTitle: `Export Logs for ${currentLogbook?.name}`
                     });
                 } else {
                     Alert.alert("Error", "File sharing is disabled or unavailable on this device.");
@@ -83,7 +84,7 @@ const handleExport = async () => {
     };
 
 	// Show message if no vessel is selected
-	if (!currentVessel) {
+	if (!currentLogbook) {
         return (
             <Screen style={styles.centerContainer}>
                 <Text style={[styles.emptyText, { color: theme.colors.textPrimary }]}>
@@ -100,25 +101,22 @@ const handleExport = async () => {
         );
     }
 
-    const renderItem = ({ item }: { item: DBLog }) => (
+const renderItem = ({ item }: { item: DBLogItem }) => (
         <Card
             onPress={() => router.push(`/events/${item.id}`)}
             style={styles.card}
         >
             <View style={styles.cardHeader}>
                 <Text style={[styles.dateText, { color: theme.colors.textSecondary }]}>
-                    {new Date(item.timestamp).toLocaleString()}
+                    {new Date(item.created_at).toLocaleString()}
                 </Text>
-                {item.vessel_name && (
-                    <Text style={[styles.vesselNameText, { color: theme.colors.primary }]}>
-                        {item.vessel_name}
-                    </Text>
-                )}
             </View>
+
             <Text style={[styles.entryText, { color: theme.colors.textPrimary }]}>
-                {item.entry}
+                {item.title}
             </Text>
-			<Text style={[styles.coordText, { color: theme.colors.textSecondary }]}>
+
+            <Text style={[styles.coordText, { color: theme.colors.textSecondary }]}>
                 {(item.latitude === 0 && item.longitude === 0)
                     ? "No Location Data"
                     : `Lat: ${item.latitude.toFixed(8)}, Lon: ${item.longitude.toFixed(8)}`
@@ -134,7 +132,7 @@ return (
                     style={[styles.pageTitle, { color: theme.colors.textPrimary }]}
                     numberOfLines={1}
                 >
-                    ⛵ {currentVessel.name}
+                    ⛵ {currentLogbook.name}
                 </Text>
 
                 <TouchableOpacity
@@ -168,7 +166,7 @@ return (
                         ListEmptyComponent={
                             <View style={styles.centerContainer}>
                                 <Text style={{ color: theme.colors.textSecondary }}>
-                                    No events recorded for {currentVessel.name}.
+                                    No events recorded for {currentLogbook.name}.
                                 </Text>
                             </View>
                         }
@@ -238,15 +236,5 @@ const styles = StyleSheet.create({
     coordText: {
         fontSize: 12,
         fontFamily: "monospace",
-    },
-    vesselNameText: {
-        fontSize: 12,
-        fontWeight: "bold",
-        textTransform: "uppercase",
-        backgroundColor: 'rgba(0, 122, 255, 0.1)',
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 4,
-        overflow: 'hidden',
     },
 });

@@ -1,70 +1,70 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSQLiteContext } from "expo-sqlite";
-import { getLogs, addLog, deleteLog, updateLog, getLogById } from "@/src/database/db";
+import { getLogItems, addLogItem, deleteLogItem, updateLogItem, getLogItemById } from "@/src/database/db";
 
-export const LOG_KEYS = {
-	all: ["logs"] as const,
-	list: (vesselId?: string | null) => ["logs", "list", { vesselId }] as const,
-	detail: (id: string) => ["logs", id] as const,
+export const LOG_ITEM_KEYS = {
+	all: ["log_items"] as const,
+	list: (logbookId?: string | null) => ["log_items", "list", { logbookId }] as const,
+	detail: (id: string) => ["log_items", "detail", id] as const,
 };
 
-export function useLogs(vesselId?: string | null) {
+export function useLogItems(logbookId?: string | null) {
 	const db = useSQLiteContext();
 	return useQuery({
-		queryKey: LOG_KEYS.list(vesselId),
-		queryFn: () => getLogs(db, vesselId || undefined),
+		queryKey: LOG_ITEM_KEYS.list(logbookId),
+		queryFn: () => getLogItems(db, logbookId || undefined),
 	});
 }
 
-export function useLog(id: string) {
+export function useLogItem(id: string) {
 	const db = useSQLiteContext();
 	return useQuery({
-		queryKey: LOG_KEYS.detail(id),
-		queryFn: () => getLogById(db, id),
+		queryKey: LOG_ITEM_KEYS.detail(id),
+		queryFn: () => getLogItemById(db, id),
 		enabled: !!id, // Only run if ID exists
 	});
 }
 
-export function useAddLog() {
+export function useAddLogItem() {
 	const db = useSQLiteContext();
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: async (data: { entry: string; lat: number; lon: number; vesselId?: string | null }) => {
-			return addLog(db, data.entry, data.lat, data.lon, data.vesselId);
+		mutationFn: async (data: { title: string; body?: string | null; lat: number; lon: number; logbookId: string }) => {
+			return addLogItem(db, data.logbookId, data.title, data.body || null, data.lat, data.lon);
 		},
 		onSuccess: () => {
 			// Automatically refresh the list when a log is added
-			queryClient.invalidateQueries({ queryKey: LOG_KEYS.all });
+			queryClient.invalidateQueries({ queryKey: LOG_ITEM_KEYS.all });
 		},
 	});
 }
 
-export function useUpdateLog() {
+export function useUpdateLogItem() {
 	const db = useSQLiteContext();
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: async (data: { id: string; entry: string; timestamp?: string; lat?: number; lon?: number }) => {
-			return updateLog(db, data.id, data.entry, data.timestamp, data.lat, data.lon);
+		mutationFn: async (data: { id: string; title: string; body?: string | null; lat?: number; lon?: number }) => {
+			return updateLogItem(db, data.id, data.title, data.body || null, data.lat, data.lon);
 		},
 		onSuccess: (_, variables) => {
-			queryClient.invalidateQueries({ queryKey: LOG_KEYS.all }).then();
-			queryClient.invalidateQueries({ queryKey: LOG_KEYS.detail(variables.id) }).then();
+			queryClient.invalidateQueries({ queryKey: LOG_ITEM_KEYS.all }).then();
+			queryClient.invalidateQueries({ queryKey: LOG_ITEM_KEYS.detail(variables.id) }).then();
 		},
 	});
 }
 
-export function useDeleteLog() {
+export function useDeleteLogItem() {
 	const db = useSQLiteContext();
 	const queryClient = useQueryClient();
 
 	return useMutation({
 		mutationFn: async (id: string) => {
-			return deleteLog(db, id);
+			return deleteLogItem(db, id);
 		},
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: LOG_KEYS.all });
+			queryClient.invalidateQueries({ queryKey: LOG_ITEM_KEYS.all });
 		},
 	});
 }

@@ -1,10 +1,10 @@
 import "react-native-get-random-values";
 import { type SQLiteDatabase } from "expo-sqlite";
 import { v4 as uuidv4 } from "uuid";
-import { DBLog, DBVessel } from "@/src/types/db";
+import { DBLogItem, DBLogbook } from "@/src/types/db";
 
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {
-	const DATABASE_VERSION = 1;
+	const DATABASE_VERSION = 4;
 
 	const versionRow = await db.getFirstAsync<{ user_version: number }>("PRAGMA user_version");
 	const currentDbVersion = versionRow?.user_version ?? 0;
@@ -17,30 +17,41 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
 		return;
 	}
 
-	console.log("Starting Database Migration...");
+	console.log(`Starting Database Migration to v${DATABASE_VERSION}...`);
 
 	await db.execAsync("PRAGMA foreign_keys = ON");
 
 	await db.execAsync(`
-        CREATE TABLE IF NOT EXISTS vessels (
-            id TEXT PRIMARY KEY NOT NULL,
+		DROP TABLE IF EXISTS vessels;
+		DROP TABLE IF EXISTS logs;
+	`);
+
+	await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS logbooks (
+			id TEXT PRIMARY KEY NOT NULL,
             name TEXT NOT NULL,
             type TEXT,
             registration TEXT,
-            created_at TEXT NOT NULL
+            owner_id TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            version INTEGER DEFAULT 0
         );
     `);
 
 	// Create Logs Table
 	await db.execAsync(`
-        CREATE TABLE IF NOT EXISTS logs (
-            id TEXT PRIMARY KEY NOT NULL,
-            entry TEXT NOT NULL,
+        CREATE TABLE IF NOT EXISTS log_items (
+			id TEXT PRIMARY KEY NOT NULL,
+            logbook_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            body TEXT,
             latitude REAL NOT NULL,
             longitude REAL NOT NULL,
-            timestamp TEXT NOT NULL,
-            vessel_id TEXT,
-            FOREIGN KEY (vessel_id) REFERENCES vessels(id) ON DELETE SET NULL
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            version INTEGER DEFAULT 0,
+            FOREIGN KEY (logbook_id) REFERENCES logbooks(id) ON DELETE CASCADE
         );
     `);
 
@@ -51,81 +62,87 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
 
 // --- LOG FUNCTIONS ---
 
-export async function addLog(db: SQLiteDatabase, entry: string, latitude: number, longitude: number, vesselId: string | null = null): Promise<string> {
+export async function addLogItem(
+	db: SQLiteDatabase,
+	logbookId: string,
+	title: string,
+	body: string | null,
+	latitude: number,
+	longitude: number,
+): Promise<string> {
 	const id = uuidv4();
-	const timestamp = new Date().toISOString();
+	const now = new Date().toISOString();
 
 	await db.runAsync(
-		`INSERT INTO logs (id, entry, latitude, longitude, timestamp, vessel_id) VALUES (?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO log_items (id, logbook_id, title, body, latitude, longitude, created_at, updated_at, version)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		id,
-		entry,
+		logbookId,
+		title,
+		body,
 		latitude,
 		longitude,
-		timestamp,
-		vesselId,
+		now, // created_at
+		now, // updated_at
+		0, // initial sync version
 	);
 	return id;
 }
 
-export async function getLogs(db: SQLiteDatabase, vesselId?: string): Promise<DBLog[]> {
-	if (vesselId) {
-		// Fetch logs just for the specific vessel
-		return db.getAllAsync<DBLog>(
-			`
-			SELECT logs.*, vessels.name as vessel_name
-            FROM logs
-            LEFT JOIN vessels ON logs.vessel_id = vessels.id
-            WHERE logs.vessel_id = ?
-            ORDER BY timestamp DESC
-			`,
-			vesselId,
-		);
+export async function getLogItems(db: SQLiteDatabase, logbookId?: string): Promise<DBLogItem[]> {
+	if (logbookId) {
+		return db.getAllAsync<DBLogItem>(`SELECT * FROM log_items WHERE logbook_id = ? ORDER BY created_at DESC`, logbookId);
 	}
-
-	// If no id: return all logs
-	return db.getAllAsync<DBLog>(`
-        SELECT logs.*, vessels.name as vessel_name
-        FROM logs
-                 LEFT JOIN vessels ON logs.vessel_id = vessels.id
-        ORDER BY timestamp DESC
-    `);
+	return db.getAllAsync<DBLogItem>(`SELECT * FROM log_items ORDER BY created_at DESC`);
 }
 
-export async function getLogById(db: SQLiteDatabase, id: string): Promise<DBLog | null> {
-	return db.getFirstAsync<DBLog>(
-		`SELECT logs.*, vessels.name as vessel_name
-         FROM logs
-                  LEFT JOIN vessels ON logs.vessel_id = vessels.id
-         WHERE logs.id = ?`,
-		id,
-	);
+export async function getLogItemById(db: SQLiteDatabase, id: string): Promise<DBLogItem | null> {
+	return db.getFirstAsync<DBLogItem>(`SELECT * FROM log_items WHERE id = ?`, id);
 }
 
-export const updateLog = async (db: any, id: string | number, entry: string, timestamp?: string, lat?: number, lon?: number) => {
-	if (timestamp !== undefined && lat !== undefined && lon !== undefined) {
-		return await db.runAsync("UPDATE logs SET entry = ?, timestamp = ?, latitude = ?, longitude = ? WHERE id = ?", [entry, timestamp, lat, lon, id]);
+export const updateLogItem = async (db: SQLiteDatabase, id: string, title: string, body: string | null, lat?: number, lon?: number) => {
+	const now = new Date().toISOString();
+
+	if (lat !== undefined && lon !== undefined) {
+		return await db.runAsync("UPDATE log_items SET title = ?, body = ?, latitude = ?, longitude = ?, updated_at = ? WHERE id = ?", [
+			title,
+			body,
+			lat,
+			lon,
+			now,
+			id,
+		]);
 	} else {
-		return await db.runAsync("UPDATE logs SET entry = ? WHERE id = ?", [entry, id]);
+		return await db.runAsync("UPDATE log_items SET title = ?, body = ?, updated_at = ? WHERE id = ?", [title, body, now, id]);
 	}
 };
 
-export async function deleteLog(db: SQLiteDatabase, id: string): Promise<void> {
-	await db.runAsync(`DELETE FROM logs WHERE id = ?`, id);
+export async function deleteLogItem(db: SQLiteDatabase, id: string): Promise<void> {
+	await db.runAsync(`DELETE FROM log_items WHERE id = ?`, id);
 }
 
 // --- VESSEL FUNCTIONS ---
 
-export async function addVessel(db: SQLiteDatabase, name: string, type: string, registration: string): Promise<string> {
+export async function addLogbook(db: SQLiteDatabase, name: string, type: string, registration: string): Promise<string> {
 	const id = uuidv4();
-	const createdAt = new Date().toISOString();
-	await db.runAsync(`INSERT INTO vessels (id, name, type, registration, created_at) VALUES (?, ?, ?, ?, ?)`, id, name, type, registration, createdAt);
+	const now = new Date().toISOString();
+	await db.runAsync(
+		`INSERT INTO logbooks (id, name, type, registration, created_at, updated_at, version) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		id,
+		name,
+		type,
+		registration,
+		now,
+		now,
+		0,
+	);
 	return id;
 }
 
-export async function getVessels(db: SQLiteDatabase): Promise<DBVessel[]> {
-	return db.getAllAsync<DBVessel>(`SELECT * FROM vessels ORDER BY created_at DESC`);
+export async function getLogbooks(db: SQLiteDatabase): Promise<DBLogbook[]> {
+	return db.getAllAsync<DBLogbook>(`SELECT * FROM logbooks ORDER BY created_at DESC`);
 }
 
-export async function deleteVessel(db: SQLiteDatabase, id: string): Promise<void> {
-	await db.runAsync(`DELETE FROM vessels WHERE id = ?`, id);
+export async function deleteLogbook(db: SQLiteDatabase, id: string): Promise<void> {
+	await db.runAsync(`DELETE FROM logbooks WHERE id = ?`, id);
 }

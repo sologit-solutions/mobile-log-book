@@ -2,23 +2,21 @@ import React, { useState } from "react";
 import { StyleSheet, View, Text, TouchableOpacity, FlatList, Alert, ActivityIndicator } from "react-native";
 import { Screen } from "@/src/components/Screen";
 import { useOwnTheme } from "@/src/context/ThemeContext";
-import { useVesselStore } from "@/src/store/vesselStore";
+import { useLogbookStore } from "@/src/store/logbookStore";
 import { useButtonStore } from "@/src/store/buttonStore"; // <--- Import Store
-import { useAddLog } from "@/src/features/logbook/hooks";
+import { useAddLogItem } from "@/src/features/logbook/hooks";
 import { getCurrentLocation } from "@/src/utils/location";
 
 export default function Home() {
     const { theme } = useOwnTheme();
-    const { currentVessel } = useVesselStore();
-    const { buttons } = useButtonStore(); // <--- Get dynamic buttons
-    const addLogMutation = useAddLog();
-
-    // const [locationLoading, setLocationLoading] = useState(false);
+    const { currentLogbook } = useLogbookStore();
+    const { buttons } = useButtonStore();
+    const addLogItemMutation = useAddLogItem();
 
 	const [loadingButtonId, setLoadingButtonId] = useState<string | null>(null);
 
     const handleAction = async (actionLabel: string, buttonId: string) => {
-        if (!currentVessel) {
+        if (!currentLogbook) {
             Alert.alert("No Vessel", "Please select a vessel in your profile first.");
             return;
         }
@@ -30,7 +28,7 @@ export default function Home() {
 
         try {
 
-			// Set timeout for 5 seconds
+			// Set timeout for 10 seconds
 			const timeoutPromise = new Promise<{ coords: { latitude: number; longitude: number } }>((_, reject) =>
                 setTimeout(() => reject(new Error("Location timeout")), 10000)
             );
@@ -49,11 +47,11 @@ export default function Home() {
             Alert.alert("Location Error", error.message || "Could not fetch location.");
         }
 
-		addLogMutation.mutate({
-			vesselId: currentVessel.id,
+		addLogItemMutation.mutate({
+			logbookId: currentLogbook.id,
+			title: actionLabel,
 			lat: lat,
 			lon: lon,
-			entry: actionLabel
 		}, {
 			onSuccess: () => {
 				Alert.alert("Success", "Event saved succesfully")
@@ -99,9 +97,9 @@ export default function Home() {
         <Screen style={styles.container}>
             <View style={styles.header}>
                 <Text style={[styles.vesselTitle, { color: theme.colors.textPrimary }]}>
-                    {currentVessel ? currentVessel.name : "No Vessel Selected"}
+                    {currentLogbook ? currentLogbook.name : "No Vessel Selected"}
                 </Text>
-                {!currentVessel && (
+                {!currentLogbook && (
                     <Text style={{ color: theme.colors.textSecondary, marginTop: 5 }}>
                         Go to Profile to select a vessel
                     </Text>
