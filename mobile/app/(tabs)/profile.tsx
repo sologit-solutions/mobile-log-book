@@ -1,14 +1,14 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Modal, FlatList, TouchableOpacity, ScrollView, Pressable, Platform, KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback, Alert } from "react-native";
+import { View, Text, StyleSheet, Modal, FlatList, TouchableOpacity, ScrollView, Pressable, Platform, KeyboardAvoidingView, Keyboard, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen } from "@/src/components/Screen";
 import { Button } from "@/src/components/Button";
 import { Input } from "@/src/components/Input";
 import { Card } from "@/src/components/Card";
 import { useOwnTheme } from "@/src/context/ThemeContext";
-import { useVessels, useAddVessel, useDeleteVessel } from "@/src/features/vessels/hooks";
+import { useVessels, useAddVessel, useDeleteVessel } from "@/src/features/logbooks/hooks";
 import { useAuthStore } from "@/src/store/authStore";
-import { useVesselStore } from "@/src/store/vesselStore";
+import { useLogbookStore } from "@/src/store/logbookStore";
 import {useButtonStore} from "@/src/store/buttonStore";
 
 export default function Profile() {
@@ -16,7 +16,7 @@ export default function Profile() {
     const router = useRouter();
 
     const { user, mode, logout } = useAuthStore();
-    const { currentVessel, setCurrentVessel } = useVesselStore();
+    const { currentLogbook, setCurrentLogbook } = useLogbookStore();
 
     // Button hooks
     const { buttons, addButton, removeButton } = useButtonStore();
@@ -93,7 +93,7 @@ export default function Profile() {
                 <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>Current Vessel</Text>
                 <Card onPress={() => setVesselListOpen(true)} style={styles.vesselSelector}>
                     <Text style={[styles.vesselName, { color: theme.colors.primary }]}>
-                        {currentVessel ? currentVessel.name : "Select a vessel..."}
+                        {currentLogbook ? currentLogbook.name : "Select a vessel..."}
                     </Text>
                     <Text style={{ color: theme.colors.textSecondary }}>Tap to change</Text>
                 </Card>
@@ -127,7 +127,7 @@ export default function Profile() {
                                 <TouchableOpacity
                                     style={styles.vesselItem}
                                     onPress={() => {
-                                        setCurrentVessel({ id: item.id, name: item.name });
+                                        setCurrentLogbook({ id: item.id, name: item.name });
                                         setVesselListOpen(false);
                                     }}
                                 >

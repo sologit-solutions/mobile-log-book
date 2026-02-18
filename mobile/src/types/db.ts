@@ -2,25 +2,37 @@
  * src/types/db.ts
  *
  * This file contains the strict TypeScript interfaces that mirror
- * the SQLite database schema.
+ * the Backend Prisma Models.
  */
 
-export interface DBLog {
-    id: string;
-    entry: string;
-    latitude: number;
-    longitude: number;
-    timestamp: string;      // ISO 8601 string
-    updated_at: string;     // ISO 8601 string
-    vessel_id?: string | null;
-    // Joins
-    vessel_name?: string | null;
+export interface DBLogItem {
+	id: string;
+	logbook_id: string;
+	title: string;
+	body?: string | null;
+
+	latitude: number;
+	longitude: number;
+
+	crew?: number | null;
+	speed?: number | null;
+
+	created_at: string; // ISO 8601 string
+	updated_at: string; // ISO 8601 string
+	vessel_id?: string | null;
+
+	version: number;
 }
 
-export interface DBVessel {
-    id: string;
-    name: string;
-    type: string;
-    registration?: string | null;
-    created_at: string;     // ISO 8601 string
+export interface DBLogbook {
+	id: string;
+	name: string;
+	owner_id?: string;
+
+	type?: string | null;
+	registration?: string | null;
+
+	created_at: string;
+	updated_at: string;
+	version: number;
 }
