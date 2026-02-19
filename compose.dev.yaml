@@ -13,3 +13,10 @@ services:
   db:
     ports:
       - ${POSTGRES_PORT}:${POSTGRES_PORT}
+  
+  traefik:
+    command:
+      - "--api.insecure=true"
+      - "--api.dashboard=true"
+    ports:
+      - "8080:8080"

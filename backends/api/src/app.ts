@@ -13,7 +13,7 @@ app.use(express.json());
 app.use(passport.initialize());
 app.use(requestLogging);
 
-app.use("/users", usersRouter);
-app.use("/logbooks", requireAuth, logbookRouter);
+app.use("/api/users", usersRouter);
+app.use("/api/logbooks", requireAuth, logbookRouter);
 
 export default app;
