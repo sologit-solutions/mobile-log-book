@@ -1,1 +1,1 @@
-export type { Logbook } from "@prisma/client";
+export type { Logbook } from '../generated/client.ts';

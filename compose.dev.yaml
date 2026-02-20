@@ -9,7 +9,22 @@ services:
       - ./backends/api/prisma:/app/prisma
     ports:
       - ${API_PORT}:${API_PORT}
+    labels:
+      - "traefik.http.routers.api.entrypoints=web"
 
   db:
     ports:
       - ${POSTGRES_PORT}:${POSTGRES_PORT}
+  
+  web:
+    ports:
+      - "5173:80"
+    labels:
+      - "traefik.http.routers.web.entrypoints=web"
+  
+  traefik:
+    command:
+      - "--api.insecure=true"
+      - "--api.dashboard=true"
+    ports:
+      - "8080:8080"

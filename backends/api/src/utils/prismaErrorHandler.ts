@@ -1,7 +1,14 @@
-import { Prisma } from "@prisma/client";
+import { Prisma } from "../generated/client.ts";
 import logger from "./logger.ts";
 import type { ResultFailure } from "../types/result.ts";
 
+/**
+ *
+ *
+ * @param {unknown} error
+ * @param {ResultFailure} result
+ * @return {*}  {Promise<ResultFailure>}
+ */
 const handlerPrismaError = async (
   error: unknown,
   result: ResultFailure,

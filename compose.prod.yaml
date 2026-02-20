@@ -1,6 +1,39 @@
 services:
   api:
     restart: always
+    labels:
+      - "traefik.http.routers.api.rule=Host(`api.${HOST}`)"
+      - "traefik.http.routers.api.entrypoints=websecure"
+      - "traefik.http.routers.api.tls=true"
 
   db:
     restart: always
+
+  web:
+    restart: always
+    labels:
+      - "traefik.http.routers.web.rule=Host(`${HOST}`)"
+      - "traefik.http.routers.web.entrypoints=websecure"
+      - "traefik.http.routers.web.tls=true"
+  
+  traefik:
+    restart: always
+    command:
+      - "--providers.docker.exposedByDefault=false"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--entrypoints.websecure.http.tls.certresolver=letsencrypt"
+      - "--log.filePath=/var/log/traefik/logs.log"
+      - "--log.format=json"
+      - "--log.level=INFO"
+      - "--log.maxAge=30"
+      - "--accesslog=true"
+      - "--accesslog.format=json"
+    ports:
+      - "443:443"
+    volumes:
+      - /etc/traefik/acme.json:/etc/traefik/acme.json
