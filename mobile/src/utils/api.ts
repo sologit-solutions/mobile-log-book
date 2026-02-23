@@ -116,36 +116,68 @@ export async function registerUser(email: string, username: string, password: st
 	}
 }
 
-export async function loginUser(email: string, password: string): Promise<UserData | null> {
+/**
+ * Executes the authentication handshake for returning users
+ * Maps mobile payload to the backend loginValidator and extracts cryptographic tokens
+ *
+ * @param email - The users email address or username
+ * @param password - The users raw password
+ * @returns A promise resolving to the mapped AuthResponse payload
+ * @throws Will throw an error if the network request fails or credentials are invalid
+ */
+export async function loginUser(email: string, password: string): Promise<AuthResponse | null> {
 	try {
-		const response = await fetch(`${API_URL}/login`, {
+		const response = await fetch(`${API_URL}/users/login`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 			},
+			// backend expects usernameOrEmail
 			body: JSON.stringify({
-				email: email,
+				usernameOrEmail: email,
 				password: password,
 			}),
 		});
 
 		const json = await response.json();
-		console.log("Login response: ", json);
+		console.log("Login Server Response: ", json);
 
-		if (!response.ok) {
-			throw new Error("Login failed");
+		// Evaluate explicit success flags and HTTP status
+		if (!response.ok || json.success === false) {
+			const errorMessage = json.error?.message || json.message || "Invalid credentials.";
+			throw new Error(errorMessage);
 		}
 
-		if (json.data) {
-			return {
-				id: json.data.user_id,
-				name: json.data.username,
-				email: json.data.email,
-			};
+		// Extract authorization payload from the backend DTO
+		const accessToken = json.data?.accessToken?.token;
+		const refreshToken = json.data?.refreshToken?.token;
+
+		// Fallback: Check for 'id' first (Login DTO) + fallback to 'userId' (Signup DTO)
+		const backendUserId = json.data?.user?.id || json.data?.user?.userId;
+
+		if (!accessToken || !backendUserId) {
+			throw new Error("Critical: Server did not return expected authentication payload.");
 		}
-		return json;
-	} catch (error) {
-		console.error("Login error: ", error);
-		return null;
+
+		// Persist tokens to the hardware keychain
+		await SecureStore.setItemAsync("auth_token", accessToken);
+		if (refreshToken) {
+			await SecureStore.setItemAsync("refresh_token", refreshToken);
+		}
+
+		// Map the backend response to the frontend state requirement
+		const mappedUser: UserData = {
+			id: backendUserId,
+			name: json.data?.user?.username || email.split("@")[0], // Fallback if backend omits it
+			email: json.data?.user?.email || email,
+		};
+
+		return {
+			user: mappedUser,
+			token: accessToken,
+		};
+	} catch (error: any) {
+		console.error("Login error: ", error.message);
+		throw error;
 	}
 }
