@@ -2,7 +2,7 @@ model Logitem {
   id String @id @default(uuid())
   logbook Logbook @relation(fields: [logbookId], references: [id], onDelete: Cascade)
   logbookId String
-  title String @db.VarChar(64)
+  title String? @db.VarChar(64)
   body String? @db.VarChar(1024)
   crew Int?
   latitude Float?
@@ -15,4 +15,5 @@ model Logitem {
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
   version Int
+  isActive Boolean @default(true)
 }
