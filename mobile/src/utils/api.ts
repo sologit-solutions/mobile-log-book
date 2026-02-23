@@ -1,117 +1,151 @@
+import { Platform } from "react-native";
+import * as SecureStore from "expo-secure-store";
+
 /**
  * This is only for prototyping and testing the login functionality
  * @param email Users email to login to the application
  * @param password Users password
  * @returns Either users username, or if credentials are invalid returns null
  */
-export async function loginUserOld(
-    email: string,
-    password: string
-): Promise<UserData | null> {
-  // Simulate a short network delay for realism
-  await new Promise(resolve => setTimeout(resolve, 500));
+export async function loginUserOld(email: string, password: string): Promise<UserData | null> {
+	// Simulate a short network delay for realism
+	await new Promise((resolve) => setTimeout(resolve, 500));
 
-  if (email === "eikka@moikka.fi" && password === "moikka") {
-    return {
-      id: "mock-id-eikka",
-      name: "eikka",
-      email: "eikka@moikka.fi"
-    };
-  }
+	if (email === "eikka@moikka.fi" && password === "moikka") {
+		return {
+			id: "mock-id-eikka",
+			name: "eikka",
+			email: "eikka@moikka.fi",
+		};
+	}
 
-  return null;
+	return null;
 }
 
 // This is only temporary for demonstration purposes
 export async function registerUserTemp(email: string, username: string, password: string): Promise<UserData | null> {
-  // Simulate a short network delay for realism during presentation
-  await new Promise(resolve => setTimeout(resolve, 800));
+	// Simulate a short network delay for realism during presentation
+	await new Promise((resolve) => setTimeout(resolve, 800));
 
-  console.log("Mock Registration initiated for:", { email, username });
+	console.log("Mock Registration initiated for:", { email, username });
 
-  // Return a success object immediately
-  return {
-    id: "temp-id-" + Math.floor(Math.random() * 10000),
-    name: username,
-    email: email
-  };
+	// Return a success object immediately
+	return {
+		id: "temp-id-" + Math.floor(Math.random() * 10000),
+		name: username,
+		email: email,
+	};
 }
 
+// Represents the sanitized user entity utilized by the global Zustand store
 export interface UserData {
-  id: string;
-  name: string;
-  email: string;
+	id: string;
+	name: string;
+	email: string;
 }
 
-const API_URL = "http://localhost:3000/accounts";
+// Represents the complete authentication payload returned from successful signup network requests
+export interface AuthResponse {
+	user: UserData;
+	token: string;
+}
 
-export async function registerUser(email: string, username: string, password: string): Promise<UserData | null> {
-  try {
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: email,
-        username: username,
-        password: password,
-      }),
-    });
+/**
+ * Dynamically resolve the backend API base URL depending on the active emulator
+ * iOS Simulators use the hosts localhost
+ * Android Emulators require a specific IP
+ */
+const API_URL = Platform.OS === "android" ? "http://10.0.2.2:8000" : "http://localhost:8000";
 
-    const json = await response.json();
-    console.log("Server response: ", json);
+/**
+ * Executes the account creation handshake with the Express backend
+ * Evaluates backend Data Transfer Objects (DTOs) and persists cryptographic tokens upon success
+ *
+ * @param email - The users email address
+ * @param username - The user's chosen display name
+ * @param password - The user's raw, unhashed password
+ * @returns A promise resolving to the mapped authentication payload
+ * @throws Will throw an error if the network request fails or the database rejects the payload
+ */
+export async function registerUser(email: string, username: string, password: string): Promise<AuthResponse | null> {
+	try {
+		const response = await fetch(`${API_URL}/users/signup`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ email, username, password }),
+		});
 
-    if (!response.ok) {
-      throw new Error(json.message || "Registration failed");
-    }
+		const json = await response.json();
+		console.log("Server response: ", json);
 
-    if (json.data) {
-      return {
-        id: json.data.user_id,
-        email: json.data.email,
-        name: json.data.username,
-      }
-    }
+		// Evaluate explicit success flags and HTTP status
+		if (!response.ok || json.success === false) {
+			const errorMessage = json.error?.message || json.message || "Registration failed on server.";
+			throw new Error(`Server Error: ${errorMessage}`);
+		}
 
-    return null;
+		// Extract authorization payload
+		const accessToken = json.data?.accessToken?.token;
+		const refreshToken = json.data?.refreshToken?.token;
+		const backendUserId = json.data?.user?.userId;
 
-  } catch (error) {
-    console.error("Registration error: ", error);
-    return null;
-  }
+		if (!accessToken || !backendUserId) {
+			throw new Error("Critical: Server did not return expected authentication payload.");
+		}
+
+		// Persist tokens to the hardware keychain
+		await SecureStore.setItemAsync("auth_token", accessToken);
+		if (refreshToken) {
+			await SecureStore.setItemAsync("refresh_token", refreshToken);
+		}
+
+		// Map the backend response to the frontend state requirement
+		const mappedUser: UserData = {
+			id: backendUserId,
+			email: email,
+			name: username, // Fixes the "undefined" alert
+		};
+
+		return {
+			user: mappedUser,
+			token: accessToken,
+		};
+	} catch (error: any) {
+		console.error("Registration error: ", error.message);
+		throw error;
+	}
 }
 
 export async function loginUser(email: string, password: string): Promise<UserData | null> {
-  try {
-    const response = await fetch(`${API_URL}/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: email,
-        password: password,
-      })
-    })
+	try {
+		const response = await fetch(`${API_URL}/login`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				email: email,
+				password: password,
+			}),
+		});
 
-    const json = await response.json();
-    console.log("Login response: ", json);
+		const json = await response.json();
+		console.log("Login response: ", json);
 
-    if (!response.ok) {
-      throw new Error("Login failed");
-    }
+		if (!response.ok) {
+			throw new Error("Login failed");
+		}
 
-    if (json.data) {
-      return {
-        id: json.data.user_id,
-        name: json.data.username,
-        email: json.data.email
-      };
-    }
-    return json;
-  } catch (error) {
-    console.error("Login error: ", error);
-    return null;
-  }
+		if (json.data) {
+			return {
+				id: json.data.user_id,
+				name: json.data.username,
+				email: json.data.email,
+			};
+		}
+		return json;
+	} catch (error) {
+		console.error("Login error: ", error);
+		return null;
+	}
 }

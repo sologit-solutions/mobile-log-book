@@ -14,11 +14,13 @@ import {
   TouchableWithoutFeedback,
   Keyboard
 } from "react-native";
+import { z } from 'zod';
 import { useRouter } from "expo-router";
 import { Screen } from "@/src/components/Screen";
 import { Input } from "@/src/components/Input";
 import { Button } from "@/src/components/Button";
 import { useOwnTheme } from "@/src/context/ThemeContext";
+import { registerUser } from '@/src/utils/api';
 import { useAuthStore } from "@/src/store/authStore";
 
 export default function LoginScreen() {
@@ -39,6 +41,16 @@ export default function LoginScreen() {
   const [signupData, setSignupData] = useState({ name: "", email: "", password: "", confirm: "" });
   const [resetEmail, setResetEmail] = useState("");
 
+	const signupSchema = z.object({
+		name: z.string().min(1, "Username is required."),
+		email: z.string().email("Please enter a valid email address."),
+		password: z.string().min(8, "Password must be at least 8 characters long."),
+		confirm: z.string()
+	}).refine((data) => data.password === data.confirm, {
+		message: "Passwords do not match.",
+		path: ["confirm"],
+	});
+
   // --- Handlers ---
   const handleLogin = async () => {
     if (!email || !password) {
@@ -54,7 +66,7 @@ export default function LoginScreen() {
         if (email.toLowerCase().includes("eikka")) {
           userName = "eikkaaaaa";
         } else {
-          userName = email.split('@');
+          userName = email.split('@')[0];
         }
 
         login({ id: "1", name: userName, email }, "mock-token");
@@ -70,20 +82,56 @@ export default function LoginScreen() {
     router.replace("/(tabs)/home");
   };
 
-  const handleSignup = () => {
+  /**
+	 * Orchestrates the user registration flow
+	 * Handles local schema validation, delegates network execution,
+	 * hydrates the global state
+	 * and manages UI routing transitions
+	 */
+  const handleSignup = async () => {
     if (!signupData.name || !signupData.email || !signupData.password) return Alert.alert("Error", "Fill all fields");
     if (signupData.password !== signupData.confirm) return Alert.alert("Error", "Passwords do not match");
 
-    Alert.alert("Success", `Account created for ${signupData.name}!`, [{
-      text: "OK", onPress: () => {
-        // Log in new user immediately
-        login({ id: "new-user", name: signupData.name, email: signupData.email }, "mock-token");
-        setSignupVisible(false);
-        setSignupData({ name: "", email: "", password: "", confirm: "" });
-        router.replace("/(tabs)/home");
-      }
-    }]);
-  };
+	// Execute client side validation
+	const validationResult = signupSchema.safeParse(signupData);
+
+	if (!validationResult.success) {
+		// Extract the first validation error message and alert the user
+		const firstError = validationResult.error.issues[0].message;
+		return Alert.alert("Validation Error", firstError);
+	}
+
+	setLoading(true);
+	try {
+		// Delegate network execution
+		const authPayload = await registerUser(
+			signupData.email,
+			signupData.name,
+			signupData.password
+		);
+
+		if (authPayload) {
+			Alert.alert("Success", `Account created for ${authPayload.user.name}!`, [{
+				text: "OK",
+				onPress: () => {
+					// Hydrate zustand store with real user data + token
+					// This dictates the mode: 'online' state
+					login(authPayload.user, authPayload.token);
+
+					// UI Reset + navigation
+					setSignupVisible(false);
+					setSignupData({ name: "", email: "", password: "", confirm: "" });
+					router.replace("/(tabs)/home");
+				}
+			}]);
+		}
+	} catch (error: any) {
+		// Catches network timeouts and explicit backend db rejects
+		Alert.alert("Registration Failed", error.message);
+	} finally {
+		setLoading(false);
+	}
+	};
 
   const handleResetPassword = () => {
     if (!resetEmail) return Alert.alert("Error", "Enter your email");
