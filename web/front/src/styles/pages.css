@@ -1,0 +1,121 @@
+/* ----- HERO STRUCTURE (MainPage, LogsPage, NotesPage) ----- */
+
+.heroArea {
+    display: grid;
+    place-items: center;
+    padding-top: 24px;
+}
+
+.brand {
+    display: grid;
+    place-items: center;
+    gap: 14px;
+}
+
+.logoImage {
+    width: 300px;
+    height: 300px;
+    object-fit: contain;
+}
+
+.brandTitle {
+    font-size: 70px;
+    font-weight: var(--fw-black, 800);
+    font-family: var(--font-heading), sans-serif;
+    letter-spacing: 1px;
+    margin: 0;
+    align-items: center;
+    color: var(--brand-blue);
+}
+
+.logsScroll {
+    height: calc(100vh - 320px);
+    min-height: 420px;
+    transition: height 260ms ease;
+}
+
+/* when focused on a card, hide hero area (in notes/logs pages) and expand the lists to make them taller */
+.content.focusLog .heroArea {
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-12px);
+    overflow: hidden;
+    pointer-events: none;
+    padding: 0;
+    margin: 0;
+    transition: max-height 260ms ease, opacity 180ms ease, transform 260ms ease;
+}
+
+.content.focusLog .logsScroll { height: calc(100vh - 70px); }
+
+/* so that dashboard won't collapse (on main page) when the user clicks on a card to expand it */
+.content.dashboard.focusLog .heroArea {
+    max-height: unset !important;
+    opacity: 1 !important;
+    transform: none !important;
+    overflow: visible !important;
+    pointer-events: auto !important;
+    padding-top: 24px !important;
+    margin: 0 !important;
+}
+
+.content.dashboard.focusLog .logsScroll { height: auto !important; }
+
+.dashScroll {
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+}
+
+.content.dashboard .logsScroll { height: auto !important; min-height: 0 !important; }
+
+.dashList {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+}
+
+/* ----- SIMPLEBAR ----- */
+
+.simplebar-track.simplebar-vertical { width: 20px; }
+.simplebar-scrollbar:before { background: rgba(127, 127, 127, 0.6); border-radius: 999px;}
+.simplebar-scrollbar.simplebar-visible:before { opacity: 1; }
+
+/* ----- DATE GROUPS FOR LOGS ----- */
+
+.dateGroup {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.dateHeader {
+    width: 100%;
+    border: var(--border);
+    border-radius: var(--border-radius);
+    background: rgba(127, 127, 127, 0.10);
+    color: inherit;
+    cursor: pointer;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.dateHeaderLeft {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.dateHeaderTitle { font-size: 20px; font-weight: 700; }
+.dateHeaderCount { font-size: 13px; opacity: 0.75; }
+.dateChevron { transition: transform 160ms ease; transform: scale(var(--ggs, 1)); }
+.dateChevron.open { transform: rotate(180deg) scale(var(--ggs, 1)); }
+.dateInnerScroll { max-height: 520px; padding-right: 8px; }
+
+.dateInnerList {
+    display: grid;
+    gap: 12px;
+    padding: 4px 2px 8px;
+}
