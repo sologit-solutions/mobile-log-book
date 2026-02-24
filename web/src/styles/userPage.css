@@ -1,0 +1,139 @@
+/* up aka user page */
+
+.up-wrap {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 28px 18px 70px;
+}
+
+.up-hero {
+    display: grid;
+    place-items: center;
+    gap: 14px;
+    padding: 30px 0 20px;
+}
+
+.up-avatar {
+    width: 170px;
+    height: 170px;
+    border-radius: 999px;
+    border: var(--border);
+    background: var(--surface-1);
+    display: grid;
+    place-items: center;
+    transition: transform 160ms ease, box-shadow 220ms ease, background 200ms ease;
+}
+
+.up-avatar:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--glow-dark-strong);
+}
+
+.up-avatarIcon {
+    width: 120px;
+    height: 120px;
+    color: var(--brand-blue);
+    opacity: 0.95;
+    --ggs: 5;
+}
+
+.up-name {
+    margin: 0;
+    font-size: 35px;
+    letter-spacing: 0.4px;
+    font-weight: var(--fw-bold);
+    font-family: var(--font-heading), sans-serif;
+}
+
+/* manage account button*/
+.up-manageBtn {
+    border: none;
+    background: transparent;
+    color: var(--brand-blue);
+    cursor: pointer;
+    font-size: 20px;
+    font-weight: 800;
+    padding: 0;
+}
+
+.up-manageBtn:hover { text-decoration: underline; }
+
+/* ----- CARD SECTION ----- */
+
+.up-section { margin-top: 28px; }
+
+.up-sectionTitle {
+    margin: 0 0 14px;
+    font-size: 25px;
+    font-weight: 900;
+}
+
+/* ----- CARD ----- */
+
+.up-infoCard {
+    padding: 22px 22px 20px;
+    border-radius: var(--border-radius);
+    border: var(--border);
+    background: var(--surface-1);
+    transition: transform 160ms ease, box-shadow 200ms ease, background 160ms ease;
+}
+
+.up-infoCard:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--glow-dark-strong);
+}
+
+.up-infoRow {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 10px;
+    padding: 10px 0;
+    align-items: baseline;
+}
+
+.up-infoLabel {
+    font-weight: 800;
+    opacity: 0.75;
+    letter-spacing: 0.4px;
+}
+
+.up-infoValue {
+    font-weight: 600;
+}
+
+/* ----- MODALS ----- */
+
+.up-modalCard { width: min(620px, 96vw); }
+
+/* modal error */
+.up-error {
+    margin: 10px 0 8px;
+    border: 1px solid rgba(255, 80, 80, 0.35);
+    background: rgba(255, 80, 80, 0.12);
+    border-radius: 14px;
+    padding: 10px 12px;
+    font-size: 14px;
+}
+
+/* delete account button */
+.btnDelete {
+    background: rgba(255, 80, 80, 0.18);
+    border: 1px solid rgba(255, 80, 80, 0.45);
+}
+
+.btnDelete:hover { background: rgba(255, 80, 80, 0.28); }
+
+/* username counter/limiter */
+.usernameCounter {
+    font-size: 12px;
+    opacity: 0.7;
+    margin-top: 4px;
+    text-align: right;
+    transition: color 180ms ease, opacity 180ms ease;
+}
+
+.usernameCounter.over {
+    color: #ff6b6b;
+    opacity: 1;
+    font-weight: 800;
+}

@@ -1,0 +1,393 @@
+:root { --radius: var(--border-radius); }
+
+/* ----- SHARED BUTTONS ----- */
+
+.btn,
+.iconBtn,
+.chevBtn {
+    border: var(--border);
+    background: var(--surface-1);
+    border-radius: var(--border-radius);
+    color: inherit;
+    cursor: pointer;
+    transition:
+            box-shadow 200ms ease,
+            border-color 200ms ease,
+            background 160ms ease;
+}
+
+/* rotate button whenever card is opened or closed */
+.chevBtn .gg-chevron-down {
+    transition: transform 160ms ease;
+    transform: scale(var(--ggs, 1));
+}
+.chevBtn.open .gg-chevron-down {
+    transform: rotate(180deg) scale(var(--ggs, 1));
+}
+.btn { padding: 7px 12px; font-size: 17px; }
+
+.iconBtn {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+}
+
+.iconBtn .gg-pen { --ggs: 1.1; }
+
+/* avoiding clashes with glow hovers*/
+.btn:hover,
+.iconBtn:hover,
+.chevBtn:hover {
+}
+
+/* behavior when disabled */
+.btn:disabled,
+.iconBtn:disabled,
+.chevBtn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+/* delete button variant */
+.iconBtn--delete { opacity: 0.9; }
+.iconBtn--delete:hover { background: rgba(255, 80, 80, 0.18); }
+
+/* filled with red */
+.btnDelete { border: 1px solid rgba(255, 80, 80, 0.35); background: rgba(255, 80, 80, 0.18); }
+.btnDelete:hover { background: rgba(255, 80, 80, 0.28); }
+
+/* call to action button */
+.btn--cta {
+    padding: 12px 16px;
+    font-size: 18px;
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+}
+
+/* ----- GLOW EFFECTS ----- */
+
+.glowOnHover { transition: transform 160ms ease, box-shadow 200ms ease, border-color 200ms ease; }
+
+.page.dark .glowOnHover:hover {
+    transform: translateY(-2px);
+    border-color: rgba(var(--brand-blue-rgb), 0.45);
+    box-shadow: var(--glow-dark);
+}
+
+.page.light .glowOnHover:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--glow-light);
+}
+
+/* ----- MODALS ----- */
+
+.modalOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(0, 0, 0, 0.45);
+    display: grid;
+    place-items: center;
+    padding: 18px;
+}
+
+.page.light .modalOverlay { background: rgba(0, 0, 0, 0.25); }
+
+.modalCard {
+    width: min(560px, 96vw);
+    border: var(--border);
+    border-radius: 16px;
+    background: rgba(20, 20, 20, 0.92);
+    color: inherit;
+    box-shadow: var(--shadow);
+    padding: 16px;
+}
+
+.page.light .modalCard { background: rgba(255, 255, 255, 0.92); }
+
+.modalTitle {
+    margin: 4px 0 12px;
+    font-size: 18px;
+    font-weight: var(--fw-bold);
+    font-family: var(--font-heading), sans-serif;
+}
+
+.modalForm {
+    display: grid;
+    gap: 10px;
+}
+
+.modalText {
+    margin: 0 0 14px;
+    opacity: 0.9;
+    line-height: 1.35;
+}
+
+.modalActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+/* ----- FIELDS ----- */
+
+.field {
+    display: grid;
+    gap: 6px;
+}
+
+.fieldLabel {
+    font-size: 13px;
+    opacity: 0.85;
+}
+
+.fieldInput,
+.fieldTextarea {
+    border: var(--border);
+    border-radius: 12px;
+    background: rgba(127, 127, 127, 0.12);
+    color: inherit;
+    padding: 10px 12px;
+    outline: none;
+}
+
+.fieldTextarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+/* ----- WORD COUNTERS ----- */
+
+.wordCount {
+    font-size: 12px;
+    opacity: 0.75;
+    margin-top: 4px;
+}
+
+.wordCount.over {
+    opacity: 1;
+    color: #ff6b6b;
+    font-weight: 700;
+}
+
+/* ----- SEARCH CONTAINER ----- */
+
+.searchContainer {
+    margin-bottom: 28px;
+}
+
+.searchBox {
+    position: relative;
+    width: min(520px, 92vw);
+    height: 28px;
+    display: flex;
+    align-items: center;
+}
+
+.searchInput {
+    width: 100%;
+    height: 100%;
+    padding: 4px 36px 4px 10px;
+    outline: none;
+    font-size: 17px;
+    font-weight: 500;
+    border: 2px solid transparent;
+    border-radius: var(--border-radius);
+    transition: border-color 160ms ease, background 160ms ease;
+    background-color: #53535f;
+    color: #fff;
+    caret-color: #f7f7f8;
+}
+
+.searchInput:focus {
+    border-color: rgba(var(--brand-blue-rgb), 0.85);
+    background-color: #0e0e10;
+}
+
+.searchIcon.inside {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.75;
+    pointer-events: none;
+    --ggs: 1.1;
+}
+
+.page.light .searchInput {
+    background-color: #e6e6e9;
+    color: #101010;
+    caret-color: #101010;
+}
+
+.page.light .searchInput:focus {
+    background-color: #ffffff;
+}
+
+/* ----- PLUS BUTTON ----- */
+
+.createLogBtn {
+    width: 72px;
+    height: 72px;
+    margin-top: 6px;
+    margin-bottom: 10px;
+    border-radius: 999px;
+    font-size: 40px;
+    box-shadow: var(--shadow);
+    border: none;
+    background: none;
+}
+
+.Btn {
+    position: relative;
+    background: var(--brand-blue-strong);
+    color: #181818;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    line-height: 1;
+    font-weight: 600;
+    transition: transform 160ms ease, box-shadow 200ms ease, border-color 200ms ease;
+}
+
+.Btn:hover {
+    background: transparent;
+    color: rgba(var(--brand-blue-rgb), 0.95);
+    box-shadow: var(--glow-dark);
+    transform: translateY(-1px);
+}
+
+.page.light .Btn {
+    background: var(--brand-blue-soft);
+    color: #101010;
+}
+
+.page.light .Btn:hover {
+    background: transparent;
+    color: rgba(var(--brand-blue-rgb), 0.95);
+    box-shadow: var(--glow-light);
+}
+
+/* ----- TITLES ----- */
+
+.sectionTitle {
+    font-size: 25px;
+    margin: 14px 0;
+    letter-spacing: 0.2px;
+    font-family: var(--font-heading), sans-serif;
+    font-weight: var(--fw-bold);
+}
+
+.section {
+    margin-top: 14px;
+}
+
+/* ----- EMPTY STATE ----- */
+
+.emptyState {
+    border: 1px dashed rgba(127, 127, 127, 0.35);
+    border-radius: var(--border-radius);
+    padding: 14px;
+    opacity: 0.85;
+}
+
+/* ----- TAG CHIPS ----- */
+
+.tagPill {
+    font-size: 14px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: var(--border);
+    background: rgba(127, 127, 127, 0.10);
+    color: inherit;
+    opacity: 0.9;
+    cursor: pointer;
+}
+
+.chipsRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: min(760px, 92vw);
+    justify-content: center;
+    margin-top: 12px;
+}
+
+.chip {
+    border: var(--border);
+    border-radius: 999px;
+    padding: 8px 12px;
+    background: rgba(127, 127, 127, 0.10);
+    color: inherit;
+    cursor: pointer;
+    font-size: 20px;
+    opacity: 0.9;
+}
+
+.chip--active {
+    background: var(--brand-blue-soft);
+    border-color: rgba(var(--brand-blue-rgb), 0.55);
+    opacity: 1;
+}
+
+.chip--more { font-weight: 800; opacity: 0.85; }
+
+/* ----- STAT CARDS ----- */
+
+.statCard--link { text-decoration: none; color: inherit; }
+
+.statsRow {
+    width: min(980px, 94vw);
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-bottom: 18px;
+}
+
+.recentRow { width: min(980px, 94vw); margin-top: 10px; }
+
+.statCard {
+    border: var(--border);
+    border-radius: var(--border-radius);
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(127, 127, 127, 0.06);
+}
+
+.statIcon {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    background: rgba(127, 127, 127, 0.10);
+    border: var(--border);
+    font-size: 20px;
+    opacity: 0.9;
+}
+
+.statText {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.statValue {
+    font-size: 20px;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.statLabel {
+    font-size: 13px;
+    opacity: 0.7;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+}
+
+.statValueSmall {
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0.9;
+}

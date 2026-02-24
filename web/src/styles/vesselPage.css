@@ -1,0 +1,61 @@
+@import "./userPage.css"; /* reuse the same layout */
+
+/* making anchor bigger only for vessel page/avoiding clash with main page */
+/* up = short for user page */
+.up-hero .up-avatar .gg-anchor {
+    transform: none;
+    box-sizing: border-box;
+    position: relative;
+    display: block;
+
+    /* middle part of the anchor */
+    width: 8px;
+    height: 78px;
+
+    background: currentColor;
+    border-radius: 999px;
+    color: var(--brand-blue);
+    opacity: 0.95;
+}
+
+/* ring on top of the anchor */
+.up-hero .up-avatar .gg-anchor::before {
+    content: "";
+    position: absolute;
+    box-sizing: border-box;
+
+    width: 30px;
+    height: 22px;
+    border: 4px solid currentColor;
+    border-radius: 999px;
+
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* bottom part of the anchor */
+.up-hero .up-avatar .gg-anchor::after {
+    content: "";
+    position: absolute;
+    box-sizing: border-box;
+
+    width: 72px;
+    height: 25px;
+    border: 7px solid currentColor;
+    border-top-color: transparent;
+
+    border-bottom-left-radius: 999px;
+    border-bottom-right-radius: 999px;
+
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* plus button */
+.plusBox {
+    display: grid;
+    place-items: center;
+    margin-top: 10px;
+}
