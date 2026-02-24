@@ -72,9 +72,7 @@ export function LogsProvider({ children }) {
                 const next = {
                     ...l,
                     ...patch,
-                    // normalize tags if they were part of patch
                     tags: patch?.tags !== undefined ? normalizeTags(patch.tags) : l.tags ?? [],
-                    // preserve createdAt; always bump updatedAt
                     createdAt: l.createdAt ?? now,
                     updatedAt: now,
                 };

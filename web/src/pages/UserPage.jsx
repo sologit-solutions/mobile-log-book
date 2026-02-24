@@ -13,10 +13,8 @@ export default function UserPage() {
     const navigate = useNavigate();
     const { user, isAnonymous, updateProfile, deleteAccount } = useAuth();
     const email = user?.email ?? "";
-    const username = isAnonymous
-        ? "Anonymous"
-        : (user?.username ?? (email ? email.split("@")[0] : "Sailor"));
-    const memberSince = "10.03.2025"; // demo
+    const username = isAnonymous ? "Anonymous" : (user?.username ?? (email ? email.split("@")[0] : "Sailor"));
+    const memberSince = "10.03.2025";
     const USERNAME_MAX = 20;
     const [isManageOpen, setIsManageOpen] = useState(false);
     const [draftUsername, setDraftUsername] = useState(username);

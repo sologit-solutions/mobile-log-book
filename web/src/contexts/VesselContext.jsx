@@ -13,7 +13,7 @@ export function VesselProvider({ children }) {
         let didCreate = false;
 
         setVessel((prev) => {
-            if (prev) return prev; // only one vessel allowed
+            if (prev) return prev;
             didCreate = true;
             return {
                 ...data,
@@ -37,7 +37,6 @@ export function VesselProvider({ children }) {
             return {
                 ...prev,
                 ...patch,
-                // preserve createdAt
                 createdAt: prev.createdAt ?? now,
                 updatedAt: now,
             };

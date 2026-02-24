@@ -4,8 +4,8 @@ import React, { createContext, useContext, useMemo, useState } from "react";
 
 const AuthContext = createContext(null);
 
-const USERS_KEY = "logify:users"; // [{email, password, username}]
-const SESSION_KEY = "logify:session"; // { type: "account"|"anon", email?: string }
+const USERS_KEY = "logify:users";
+const SESSION_KEY = "logify:session";
 
 /*remove after backend connection */
 function loadUsers() {

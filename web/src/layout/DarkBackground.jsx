@@ -6,7 +6,7 @@ export default function DarkBackground() {
         <div className="bgShader" aria-hidden="true">
             <ShaderGradientCanvas
                 style={{ position: "absolute", inset: 0 }}
-                pixelDensity={1}   // ✅ huge improvement
+                pixelDensity={1}
                 fov={45}
             >
                 <ShaderGradient

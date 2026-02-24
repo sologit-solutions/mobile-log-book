@@ -1,3 +1,10 @@
+/* this will hopefully remove the 'white frame' issue on login page */
+html, body {
+    margin: 0;
+    padding: 0;
+    background: #0b0b0e;
+}
+
 :root {
     /* round shapes for boxes */
     --border-radius: 10px;
