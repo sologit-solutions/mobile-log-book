@@ -37,6 +37,23 @@ export async function registerUserTemp(email: string, username: string, password
 	};
 }
 
+/**
+ * Resolves the backend API base URL via Expo's build-time environment injection
+ * Implements a fallback to local Docker containers if the .env file is missing
+ */
+const getApiUrl = (): string => {
+	// Metro Bundler replaces this at compile-time
+	const envUrl = process.env.EXPO_PUBLIC_API_URL;
+
+	if (envUrl) {
+		// Strip trailing slashes to prevent route malformation
+		return envUrl.replace(/\/$/, "");
+	}
+
+	console.warn("EXPO_PUBLIC_API_URL is undefined, falling back to local emulator network");
+	return Platform.OS === "android" ? "http://10.0.2.2:8000" : "http://localhost:8000";
+};
+
 // Represents the sanitized user entity utilized by the global Zustand store
 export interface UserData {
 	id: string;
@@ -55,7 +72,7 @@ export interface AuthResponse {
  * iOS Simulators use the hosts localhost
  * Android Emulators require a specific IP
  */
-const API_URL = Platform.OS === "android" ? "http://10.0.2.2:8000" : "http://localhost:8000";
+const API_URL = getApiUrl();
 
 /**
  * Executes the account creation handshake with the Express backend
