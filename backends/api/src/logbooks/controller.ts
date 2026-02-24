@@ -1,11 +1,13 @@
 import express from "express";
-import * as service from "./service.ts";
 import * as repository from "./repository.ts";
 import handleRequest from "../utils/requestUtils.ts";
 import idValidator from "./validators/idValidator.ts";
 import z from "zod";
+import logitemRouter from "./logitems/controller.ts";
+import logbookValidator from "./validators/logbookValidator.ts";
 
 const router = express.Router();
+router.use(logitemRouter);
 
 router.get("/", async (req, res) => {
   // Define context
@@ -23,20 +25,26 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
   // Define validator
   const validator = z.object({
-    userId: idValidator,
-    logbookName: z.coerce.string(),
+    ownerId: idValidator,
+    logbook: logbookValidator.partial({ vesselType: true, registration: true }),
   });
+
+  const input = {
+    ownerId: req.user!.id,
+    logbook: {
+      id: req.body.id,
+      name: req.body.name,
+      vesselType: req.body.vesselType,
+      registration: req.body.registration,
+    },
+  };
 
   // Define context
   const context = {
     res,
-    input: {
-      userId: req.user!.id,
-      logbookName: req.body!.logbookName,
-    },
+    input,
     validator,
-    fun: ({ userId, logbookName }: z.infer<typeof validator>) =>
-      repository.createLogbook(userId, logbookName),
+    fun: (input: z.infer<typeof validator>) => repository.createLogbook(input),
   };
 
   // Call handler
@@ -46,20 +54,21 @@ router.post("/", async (req, res) => {
 router.get("/:logbook_id", async (req, res) => {
   // Define validator
   const validator = z.object({
-    userId: idValidator,
-    logbookId: idValidator,
+    ownerId: idValidator,
+    id: idValidator,
   });
+
+  const input = {
+    ownerId: req.user!.id,
+    id: req.params.logbook_id,
+  };
 
   // Define context
   const context = {
     res,
-    input: {
-      userId: req.user!.id,
-      logbookId: req.params.logbook_id,
-    },
+    input,
     validator,
-    fun: ({ userId, logbookId }: z.infer<typeof validator>) =>
-      repository.getLogbook(userId, logbookId),
+    fun: (input: z.infer<typeof validator>) => repository.getLogbook(input),
   };
 
   // Call handler
@@ -69,22 +78,59 @@ router.get("/:logbook_id", async (req, res) => {
 router.put("/:logbook_id", async (req, res) => {
   // Define validator
   const validator = z.object({
-    userId: idValidator,
-    logbookName: z.coerce.string(),
-    logbookId: idValidator,
+    ownerId: idValidator,
+    logbook: logbookValidator,
   });
+
+  const input = {
+    ownerId: req.user!.id,
+    logbook: {
+      id: req.params.logbook_id,
+      name: req.body.name,
+      vesselType: req.body.vesselType,
+      registration: req.body.registration,
+    },
+  };
 
   // Define context
   const context = {
     res,
-    input: {
-      userId: req.user!.id,
-      logbookName: req.body?.logbookName,
-      logbookId: req.params.logbook_id,
-    },
+    input,
     validator,
-    fun: ({ userId, logbookName, logbookId }: z.infer<typeof validator>) =>
-      repository.updateLogbook(userId, logbookName, logbookId),
+    fun: (input: z.infer<typeof validator>) => repository.updateLogbook(input),
+  };
+
+  // Call handler
+  return await handleRequest(context);
+});
+
+router.patch("/:logbook_id", async (req, res) => {
+  // Define validator
+  const validator = z.object({
+    ownerId: idValidator,
+    logbook: logbookValidator.partial({
+      name: true,
+      vesselType: true,
+      registration: true,
+    }),
+  });
+
+  const input = {
+    ownerId: req.user!.id,
+    logbook: {
+      id: req.params.logbook_id,
+      name: req.body.name,
+      vesselType: req.body.vesselType,
+      registration: req.body.registration,
+    },
+  };
+
+  // Define context
+  const context = {
+    res,
+    input,
+    validator,
+    fun: (input: z.infer<typeof validator>) => repository.updateLogbook(input),
   };
 
   // Call handler
@@ -94,135 +140,25 @@ router.put("/:logbook_id", async (req, res) => {
 router.delete("/:logbook_id", async (req, res) => {
   // Define validator
   const validator = z.object({
-    userId: idValidator,
-    logbookId: idValidator,
+    ownerId: idValidator,
+    id: idValidator,
   });
+
+  const input = {
+    ownerId: req.user!.id,
+    id: req.params.logbook_id,
+  };
 
   // Define context
   const context = {
     res,
-    input: {
-      userId: req.user!.id,
-      logbookId: req.params.logbook_id,
-    },
+    input,
     validator,
-    fun: ({ userId, logbookId }: z.infer<typeof validator>) =>
-      repository.deleteLogbook(userId, logbookId),
+    fun: (input: z.infer<typeof validator>) => repository.deleteLogbook(input),
   };
 
   // Call handler
   return await handleRequest(context);
-});
-
-router.get("/:logbook_id/logs", async (req, res) => {
-  // Define validator
-  const validator = z.object({
-    userId: idValidator,
-    logbookId: idValidator,
-  });
-
-  // Define context
-  const context = {
-    res,
-    input: {
-      userId: req.user!.id,
-      logbookId: req.params.logbook_id,
-    },
-    validator,
-    fun: ({ userId, logbookId }: z.infer<typeof validator>) =>
-      repository.getLogItems(userId, logbookId),
-  };
-
-  // Call handler
-  return await handleRequest(context);
-});
-
-router.post("/:logbook_id/logs", async (req, res) => {
-  // Define validator
-  const validator = z.object({
-    userId: idValidator,
-    logbookId: idValidator,
-    logitems: req.body?.logitems, // TODO: logitem[] validator
-  });
-
-  // Define context
-  const context = {
-    res,
-    input: {
-      userId: req.user!.id,
-      logbookId: req.params.logbook_id,
-      logitems: req.body?.logitems,
-    },
-    validator,
-    fun: ({ userId, logbookId, logitems }: z.infer<typeof validator>) =>
-      service.createLogitems(userId, logbookId, logitems),
-  };
-
-  // Call handler
-  // return await handleRequest(context);
-});
-
-router.put("/:logbook_id/logs/:item_id", async (req, res) => {
-  // Define validator
-  const validator = z.object({
-    userId: idValidator,
-    logbookId: idValidator,
-    itemId: idValidator,
-    logitem: req.body?.logitem, // TODO: logItem validator
-  });
-
-  // Define context
-  const context = {
-    res,
-    input: {
-      userId: req.user!.id,
-      logbookId: req.params.logbook_id,
-      itemId: req.params.item_id,
-      logItem: req.body?.logitem,
-    },
-    validator,
-    fun: ({ userId, logbookId, itemId, logitem }: z.infer<typeof validator>) =>
-      service.updateLogItem(userId, logbookId, itemId, logitem),
-  };
-
-  // Call handler
-  // return await handleRequest(context);
-});
-
-router.delete("/:logbook_id/logs/:item_id", async (req, res) => {
-  // Define validator
-  const validator = z.object({
-    userId: idValidator,
-    logbookId: idValidator,
-    itemId: idValidator,
-  });
-
-  // Define context
-  const context = {
-    res,
-    input: {
-      userId: req.user!.id,
-      logbookId: req.params.logbook_id,
-      itemId: req.params.item_id,
-    },
-    validator,
-    fun: ({ userId, logbookId, itemId }: z.infer<typeof validator>) =>
-      repository.deleteLogItem(userId, logbookId, itemId),
-  };
-
-  // Call handler
-  return await handleRequest(context);
-});
-
-// Submit password reset
-router.get("/sync", async (req, res) => {
-  // Define validator
-  // Use query parameter "since"
-
-  // Define context
-
-  // Call handler
-  return res.status(501);
 });
 
 export default router;

@@ -1,1 +1,1 @@
-export type { Logbook } from '../generated/client.ts';
+export type { Logbook } from "../generated/client.ts";

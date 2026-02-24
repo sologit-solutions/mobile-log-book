@@ -1,1 +1,1 @@
-export type { User } from '../generated/client.ts';
+export type { User } from "../generated/client.ts";

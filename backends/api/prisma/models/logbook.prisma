@@ -3,8 +3,8 @@ model Logbook {
   owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   ownerId String
   name String @db.VarChar(64)
-  vesselType String?
-  registration String?
+  vesselType String? @db.VarChar(64)
+  registration String? @db.VarChar(64)
   logitems Logitem[]
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())

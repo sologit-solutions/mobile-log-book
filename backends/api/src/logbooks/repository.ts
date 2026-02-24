@@ -1,148 +1,96 @@
 import { prisma } from "../configs/db.ts";
 import type { Logbook } from "../types/logbook.ts";
-import type { Logitem } from "../types/logitem.ts";
 import type { Result } from "../types/result.ts";
 
-export const getLogbookVersion = async (
-  userId: string,
-  logbookId: string,
-) => {};
-
 export const getUserLogbooks = async (
-  userId: string,
+  ownerId: string,
 ): Promise<Result<Logbook[]>> => {
   const result = await prisma.logbook.findMany({
     where: {
-      ownerId: userId,
+      ownerId,
     },
   });
 
   return { success: true, data: result };
 };
 
-export const createLogbook = async (
-  userId: string,
-  name: string,
-): Promise<Result<Logbook>> => {
+export const createLogbook = async (input: {
+  ownerId: string;
+  logbook: {
+    id: string;
+    name: string;
+    vesselType?: string;
+    registration?: string;
+  };
+}): Promise<Result<Logbook>> => {
+  const { ownerId, logbook } = input;
+  const { id, name, vesselType, registration } = logbook;
   const result = await prisma.logbook.create({
     data: {
-      ownerId: userId,
-      name: name,
+      id,
+      ownerId,
+      name,
+      vesselType,
+      registration,
     },
   });
 
   return { success: true, status: 201, data: result };
 };
 
-export const getLogbook = async (
-  userId: string,
-  logbookId: string,
-): Promise<Result<Logbook>> => {
+export const getLogbook = async (input: {
+  ownerId: string;
+  id: string;
+}): Promise<Result<Logbook>> => {
+  const { ownerId, id } = input;
   const result = await prisma.logbook.findUniqueOrThrow({
     where: {
-      id: logbookId,
-      ownerId: userId,
+      id,
+      ownerId,
     },
   });
 
   return { success: true, data: result };
 };
 
-export const updateLogbook = async (
-  userId: string,
-  logbookId: string,
-  logbookName: string,
-): Promise<Result<Logbook>> => {
+export const updateLogbook = async (input: {
+  ownerId: string;
+  logbook: {
+    id: string;
+    name?: string;
+    vesselType?: string;
+    registration?: string;
+  };
+}): Promise<Result<Logbook>> => {
+  const { ownerId, logbook } = input;
+  const { id, name, vesselType, registration } = logbook;
   const result = await prisma.logbook.update({
-    where: {
-      id: logbookId,
-      ownerId: userId,
-    },
     data: {
-      name: logbookName,
+      name,
+      vesselType,
+      registration,
+      version: {
+        increment: 1,
+      },
+    },
+    where: {
+      id,
+      ownerId,
     },
   });
 
   return { success: true, data: result };
 };
 
-export const deleteLogbook = async (
-  userId: string,
-  logbookId: string,
-): Promise<Result<Logbook>> => {
+export const deleteLogbook = async (input: {
+  ownerId: string;
+  id: string;
+}): Promise<Result<Logbook>> => {
+  const { ownerId, id } = input;
   const result = await prisma.logbook.delete({
     where: {
-      id: logbookId,
-      ownerId: userId,
-    },
-  });
-
-  return { success: true, data: result };
-};
-
-export const getLogItems = async (
-  userId: string,
-  logbookId: string,
-): Promise<Result<Logitem[]>> => {
-  const result = await prisma.logitem.findMany({
-    where: {
-      logbookId: logbookId,
-      logbook: {
-        ownerId: userId,
-      },
-    },
-  });
-
-  return { success: true, data: result };
-};
-
-export const createLogitems = async (
-  userId: string,
-  logbookId: string,
-  logitems: Logitem[],
-): Promise<Result<number>> => {
-  // TODO:
-
-  // Step 1: Validate that ALL logitems in list are the latest version. If true, save.
-  // Step 2: If false, return error with conflicting items.
-  // Step 3: Client picks the preferred version
-  //         rejecting changes or updating the updatedAt.
-
-  return { success: true, status: 201, data: 0 };
-};
-
-export const updateLogitem = async (
-  userId: string,
-  logbookId: string,
-  logitemId: string,
-  logitem: Logitem,
-): Promise<Result<Logitem>> => {
-  const result = await prisma.logitem.update({
-    where: {
-      id: logitemId,
-      logbookId: logbookId,
-      logbook: {
-        ownerId: userId,
-      },
-    },
-    data: logitem,
-  });
-
-  return { success: true, data: result };
-};
-
-export const deleteLogItem = async (
-  userId: string,
-  logbookId: string,
-  logitemId: string,
-): Promise<Result<Logitem>> => {
-  const result = await prisma.logitem.delete({
-    where: {
-      id: logitemId,
-      logbookId: logbookId,
-      logbook: {
-        ownerId: userId,
-      },
+      id,
+      ownerId,
     },
   });
 
