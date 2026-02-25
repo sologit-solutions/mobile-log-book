@@ -1,1 +1,1 @@
-export type { Logitem } from '../generated/client.ts';
+export type { Logitem } from "../generated/client.ts";

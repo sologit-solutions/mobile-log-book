@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Logitem" ADD COLUMN     "isActive" BOOLEAN NOT NULL DEFAULT true,
+ALTER COLUMN "title" DROP NOT NULL;
