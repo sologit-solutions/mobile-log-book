@@ -132,7 +132,8 @@ export async function deleteLogItem(db: SQLiteDatabase, id: string): Promise<voi
  * @param registration - The registration number of the vessel (retained locally)
  * @returns The definitive ID of the created record
  */
-export async function addLogbook(db: SQLiteDatabase, id: string, name: string, type: string, registration: string): Promise<string> {
+export async function addLogbook(db: SQLiteDatabase, name: string, type: string, registration: string): Promise<string> {
+	const id = uuidv4();
 	const now = new Date().toISOString();
 	await db.runAsync(
 		`INSERT INTO logbooks (id, name, type, registration, created_at, updated_at, version) VALUES (?, ?, ?, ?, ?, ?, ?)`,

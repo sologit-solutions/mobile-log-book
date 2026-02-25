@@ -22,18 +22,17 @@ export function useAddVessel() {
 
 	return useMutation({
 		mutationFn: async (data: { name: string; type: string; registration: string }) => {
-			// Push to backend
-			const remoteRecord = await createRemoteLogbook(data.name);
+			const localId = await addLogbook(db, data.name, data.type, data.registration);
 
-			// Save to SQLite
-			await addLogbook(db, remoteRecord.id, data.name, data.type, data.registration);
-			return remoteRecord;
+			// Push to backend
+			createRemoteLogbook(localId, data.name, data.type, data.registration).catch((err) => {
+				console.log("Device offline or sync failed. Vessel saved locally and will sync later.", err.message);
+			});
+
+			return localId;
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: LOGBOOK_KEYS.all });
-		},
-		onError: (error: any) => {
-			Alert.alert("Sync Error", `Failed to create vessel on server: ${error.message}`);
 		},
 	});
 }
@@ -44,17 +43,16 @@ export function useDeleteVessel() {
 
 	return useMutation({
 		mutationFn: async (id: string) => {
-			// Delete reckord from backend
-			await deleteRemoteLogbook(id);
+			await deleteLogbook(db, id);
 
-			// Purge from SQLite
-			return deleteLogbook(db, id);
+			deleteRemoteLogbook(id).catch((err) => {
+				console.log("Device offline. Deletion will need to be reconciled later.", err.message);
+			});
+
+			return id;
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: LOGBOOK_KEYS.all });
-		},
-		onError: (error: any) => {
-			Alert.alert("Sync Error", `Failed to delete vessel on server: ${error.message}`);
 		},
 	});
 }

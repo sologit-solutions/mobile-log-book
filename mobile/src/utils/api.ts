@@ -222,13 +222,16 @@ async function getAuthHeader() {
  * @returns {Promise<any>} The server-generated db record (including the UUID)
  * @throws {Error} If the creation fails or the backend rejects the payload
  */
-export async function createRemoteLogbook(name: string): Promise<any> {
+export async function createRemoteLogbook(id: string, name: string, type: string, registration: string): Promise<any> {
 	const headers = await getAuthHeader();
 	const response = await fetch(`${API_URL}/logbooks`, {
 		method: "POST",
 		headers,
 		body: JSON.stringify({
-			logbookName: name, // backend explicitly requires this key
+			id: id,
+			name: name, // backend explicitly requires this key
+			vesselType: type.trim() === "" ? null : type,
+			registration: registration.trim() === "" ? null : registration,
 		}),
 	});
 
