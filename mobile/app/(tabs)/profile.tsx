@@ -57,7 +57,8 @@ export default function Profile() {
 	const [newButtonLabel, setNewButtonLabel] = useState("");
 
 	const handleLogout = async () => {
-		await logout();
+		logout();
+		setCurrentLogbook(null);
 		router.replace("/");
 	};
 
