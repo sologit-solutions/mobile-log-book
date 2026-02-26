@@ -18,14 +18,14 @@ export const createUser = async (
   const result = await repository.createUser(user);
 
   if (result.success) {
-    const user = result.data;
+    const { hash, isActive, updatedAt, ...user } = result.data;
     return {
-      ...result,
+      success: result.success,
       status: 201,
       data: {
         user: user,
-        refreshToken: auth.issueJWT(user.userId, ENV.REFRESH_TOKEN_EXPIRES),
-        accessToken: auth.issueJWT(user.userId, ENV.ACCESS_TOKEN_EXPIRES),
+        refreshToken: auth.issueJWT(user.id, ENV.REFRESH_TOKEN_EXPIRES),
+        accessToken: auth.issueJWT(user.id, ENV.ACCESS_TOKEN_EXPIRES),
       },
     };
   }

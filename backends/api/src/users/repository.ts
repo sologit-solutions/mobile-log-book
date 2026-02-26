@@ -4,12 +4,12 @@ import type { Result } from "../types/result.ts";
 
 export const createUser = async (
   user: Pick<User, "username" | "email" | "hash">,
-): Promise<Result<{ userId: string }>> => {
-  const data = await prisma.user.create({
+): Promise<Result<User>> => {
+  const result = await prisma.user.create({
     data: user,
   });
 
-  return { success: true, data: { userId: data.id } };
+  return { success: true, data: result };
 };
 
 export const getUserByEmail = async (
