@@ -132,12 +132,13 @@ export async function deleteLogItem(db: SQLiteDatabase, id: string): Promise<voi
  * @param registration - The registration number of the vessel (retained locally)
  * @returns The definitive ID of the created record
  */
-export async function addLogbook(db: SQLiteDatabase, name: string, type: string, registration: string): Promise<string> {
+export async function addLogbook(db: SQLiteDatabase,ownerId: string, name: string, type: string, registration: string): Promise<string> {
 	const id = uuidv4();
 	const now = new Date().toISOString();
 	await db.runAsync(
-		`INSERT INTO logbooks (id, name, type, registration, created_at, updated_at, version) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO logbooks (id, owner_id, name, type, registration, created_at, updated_at, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		id,
+		ownerId,
 		name,
 		type,
 		registration,
@@ -148,8 +149,8 @@ export async function addLogbook(db: SQLiteDatabase, name: string, type: string,
 	return id;
 }
 
-export async function getLogbooks(db: SQLiteDatabase): Promise<DBLogbook[]> {
-	return db.getAllAsync<DBLogbook>(`SELECT * FROM logbooks ORDER BY created_at DESC`);
+export async function getLogbooks(db: SQLiteDatabase, ownerId: string): Promise<DBLogbook[]> {
+	return db.getAllAsync<DBLogbook>(`SELECT * FROM logbooks WHERE owner_id = ? ORDER BY created_at DESC`, ownerId);
 }
 
 export async function deleteLogbook(db: SQLiteDatabase, id: string): Promise<void> {
@@ -163,7 +164,7 @@ export async function deleteLogbook(db: SQLiteDatabase, id: string): Promise<voi
  * @param db - The active SQLite database context
  * @param remoteLogbooks - The array of logbook DTOs returned from the Express API
  */
-export async function syncLogbooks(db: SQLiteDatabase, remoteLogbooks: any[]): Promise<void> {
+export async function syncLogbooks(db: SQLiteDatabase, remoteLogbooks: any[], ownerId: string): Promise<void> {
 	for (const lb of remoteLogbooks) {
 		// Prisma returns 'vesselType' and 'registration', map them, falling back to empty strings if null.
 		const name = lb.name || "Unnamed Vessel";
@@ -176,9 +177,10 @@ export async function syncLogbooks(db: SQLiteDatabase, remoteLogbooks: any[]): P
 		const version = lb.version || 0;
 
 		await db.runAsync(
-			`INSERT OR IGNORE INTO logbooks (id, name, type, registration, created_at, updated_at, version)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			`INSERT OR IGNORE INTO logbooks (id, owner_id, name, type, registration, created_at, updated_at, version)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 			lb.id,
+			ownerId,
 			name,
 			type,
 			registration,
@@ -187,4 +189,19 @@ export async function syncLogbooks(db: SQLiteDatabase, remoteLogbooks: any[]): P
 			version,
 		);
 	}
+}
+
+// --- MIGRATION FUNCTION ---
+
+/**
+ * Takes any vessel currently marked as 'local' (offline user)
+ * Re-assigns it to the newly logged-in user
+ */
+export async function assignLocalDataToUser(db: SQLiteDatabase, userId: string): Promise<number> {
+	const result = await db.runAsync(
+		`UPDATE logbooks SET owner_id = ? WHERE owner_id = 'local' OR owner_id IS NULL`,
+		userId
+	);
+	// Returns the number of vessels that were moved to the new account
+	return result.changes;
 }

@@ -19,7 +19,13 @@ import { Button } from "@/src/components/Button";
 import { Input } from "@/src/components/Input";
 import { Card } from "@/src/components/Card";
 import { useOwnTheme } from "@/src/context/ThemeContext";
-import { useVessels, useAddVessel, useDeleteVessel, useSyncVessels } from "@/src/features/logbooks/hooks";
+import {
+	useVessels,
+	useAddVessel,
+	useDeleteVessel,
+	useSyncVessels,
+	useMergeLocalData
+} from "@/src/features/logbooks/hooks";
 import { useAuthStore } from "@/src/store/authStore";
 import { useLogbookStore } from "@/src/store/logbookStore";
 import { useButtonStore } from "@/src/store/buttonStore";
@@ -39,6 +45,7 @@ export default function Profile() {
 	const addVesselMutation = useAddVessel();
 	const deleteVesselMutation = useDeleteVessel();
 	const syncVesselsMutation = useSyncVessels();
+	const mergeMutation = useMergeLocalData();
 
 	// UI State
 	const [isVesselListOpen, setVesselListOpen] = useState(false);
@@ -110,6 +117,13 @@ export default function Profile() {
 					loading={syncVesselsMutation.isPending}
 					style={styles.menuItem}
 				/>
+				{user && (
+					<Button
+						title="Upload Offline Data"
+						onPress={() => mergeMutation.mutate()}
+						//isLoading={mergeMutation.isPending}
+					/>
+				)}
 				<Button title="Edit home buttons" onPress={() => setEditButtonsOpen(true)} style={styles.menuItem} variant="outline" />
 			</View>
 

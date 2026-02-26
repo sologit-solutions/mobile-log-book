@@ -1,38 +1,49 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Alert } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
-import { getLogbooks, addLogbook, deleteLogbook, syncLogbooks } from "@/src/database/db";
+import { getLogbooks, addLogbook, deleteLogbook, syncLogbooks, assignLocalDataToUser } from "@/src/database/db";
 import { createRemoteLogbook, deleteRemoteLogbook, fetchRemoteLogbooks } from "@/src/utils/api";
+import { useAuthStore } from "@/src/store/authStore";
 
 export const LOGBOOK_KEYS = {
-	all: ["logbooks"] as const,
+	all: (ownerId: string) => ["logbooks", ownerId] as const,
 };
 
 export function useVessels() {
 	const db = useSQLiteContext();
+	const user = useAuthStore((state) => state.user);
+	const ownerId = user?.id || "local";
+
 	return useQuery({
-		queryKey: LOGBOOK_KEYS.all,
-		queryFn: () => getLogbooks(db),
+		queryKey: LOGBOOK_KEYS.all(ownerId),
+		queryFn: () => getLogbooks(db, ownerId),
 	});
 }
 
 export function useAddVessel() {
 	const db = useSQLiteContext();
 	const queryClient = useQueryClient();
+	const user = useAuthStore((state) => state.user);
+
+	const ownerId = user?.id || "local";
 
 	return useMutation({
 		mutationFn: async (data: { name: string; type: string; registration: string }) => {
-			const localId = await addLogbook(db, data.name, data.type, data.registration);
+			const localId = await addLogbook(db, ownerId, data.name, data.type, data.registration);
 
 			// Push to backend
-			createRemoteLogbook(localId, data.name, data.type, data.registration).catch((err) => {
-				console.log("Device offline or sync failed. Vessel saved locally and will sync later.", err.message);
-			});
+			if(user?.id){
+				createRemoteLogbook(localId, data.name, data.type, data.registration).catch((err) => {
+					console.log("Device offline or sync failed. Vessel saved locally and will sync later.", err.message);
+				});
+			} else {
+				console.log("Offline mode active: Vessel saved to local device storage");
+			}
 
 			return localId;
 		},
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: LOGBOOK_KEYS.all });
+			queryClient.invalidateQueries({ queryKey: LOGBOOK_KEYS.all(ownerId) });
 		},
 	});
 }
@@ -40,19 +51,24 @@ export function useAddVessel() {
 export function useDeleteVessel() {
 	const db = useSQLiteContext();
 	const queryClient = useQueryClient();
+	const user = useAuthStore((state) => state.user);
+
+	const ownerId = user?.id || "local";
 
 	return useMutation({
 		mutationFn: async (id: string) => {
 			await deleteLogbook(db, id);
 
-			deleteRemoteLogbook(id).catch((err) => {
-				console.log("Device offline. Deletion will need to be reconciled later.", err.message);
-			});
+			if (user?.id){
+				deleteRemoteLogbook(id).catch((err) => {
+					console.log("Device offline. Deletion will need to be reconciled later.", err.message);
+				});
+			}
 
 			return id;
 		},
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: LOGBOOK_KEYS.all });
+			queryClient.invalidateQueries({ queryKey: LOGBOOK_KEYS.all(ownerId) });
 		},
 	});
 }
@@ -64,24 +80,64 @@ export function useDeleteVessel() {
 export function useSyncVessels() {
 	const db = useSQLiteContext();
 	const queryClient = useQueryClient();
+	const user = useAuthStore((state) => state.user);
 
 	return useMutation({
 		mutationFn: async () => {
-			// Fetch remote DTOs
-			const remoteLogbooks = await fetchRemoteLogbooks();
+			// Manual syncing strictly requires an account
+			if (!user?.id) throw new Error("You must be logged in to sync with the server.");
 
-			// Execute local SQLite merge
-			await syncLogbooks(db, remoteLogbooks);
+			const remoteLogbooks = await fetchRemoteLogbooks();
+			await syncLogbooks(db, remoteLogbooks, user.id);
 
 			return remoteLogbooks.length;
 		},
 		onSuccess: (syncedCount) => {
-			// Force the UI to re-read from SQLite and update the vessel list
-			queryClient.invalidateQueries({ queryKey: LOGBOOK_KEYS.all });
+			queryClient.invalidateQueries({ queryKey: LOGBOOK_KEYS.all(user?.id || "local") });
 			Alert.alert("Sync Complete", `Successfully restored ${syncedCount} vessels from the server.`);
 		},
 		onError: (error: any) => {
 			Alert.alert("Sync Failed", error.message || "Could not reach the server.");
 		},
+	});
+}
+
+export function useMergeLocalData() {
+	const db = useSQLiteContext();
+	const queryClient = useQueryClient();
+	const user = useAuthStore((state) => state.user);
+
+	return useMutation({
+		mutationFn: async () => {
+			if (!user?.id) throw new Error("You must be logged in to link data.");
+
+			// Re-label local vessels to belong to the new user
+			const movedCount = await assignLocalDataToUser(db, user.id);
+
+			// Fetch these newly updated vessels from SQLite
+			const allMyVessels = await getLogbooks(db, user.id);
+
+			// Loop through + push them to the db
+			await Promise.all(allMyVessels.map(async (vessel) => {
+				try {
+					// Try to create it on the server
+					// If it already exists, server might return an error
+					await createRemoteLogbook(vessel.id, vessel.name, vessel.type || "", vessel.registration || "");
+				} catch (e) {
+					// Ignore "Already Exists" errors, strictly log others
+					console.log(`Sync push for ${vessel.name}:`, e);
+				}
+			}));
+
+			return movedCount;
+		},
+		onSuccess: (count) => {
+			// Refresh the UI to show the merged data
+			queryClient.invalidateQueries({ queryKey: LOGBOOK_KEYS.all(user?.id || "") });
+			Alert.alert("Success", `${count} offline vessels have been linked to your account and backed up!`);
+		},
+		onError: (err) => {
+			Alert.alert("Link Failed", "Could not link offline data: " + err.message);
+		}
 	});
 }

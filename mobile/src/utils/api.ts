@@ -102,9 +102,9 @@ export async function registerUser(email: string, username: string, password: st
 		}
 
 		// Extract authorization payload
-		const accessToken = json.data?.accessToken?.token;
-		const refreshToken = json.data?.refreshToken?.token;
-		const backendUserId = json.data?.user?.userId;
+		const accessToken = json.data?.accessToken?.token || json.data?.accessToken;
+		const refreshToken = json.data?.refreshToken?.token || json.data?.refreshToken;
+		const backendUserId = json.data?.user?.id || json.data?.user?.userId;
 
 		if (!accessToken || !backendUserId) {
 			throw new Error("Critical: Server did not return expected authentication payload.");
