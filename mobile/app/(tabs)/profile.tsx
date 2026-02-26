@@ -113,19 +113,19 @@ export default function Profile() {
 			<View style={styles.menu}>
 				<Button title="Add New Vessel" onPress={() => setAddVesselOpen(true)} style={styles.menuItem} />
 				<Button
-					title="Get vessels from db"
+					title="Get vessels from server"
 					onPress={() => syncVesselsMutation.mutate()}
 					loading={syncVesselsMutation.isPending}
 					style={styles.menuItem}
 				/>
 				{user && (
 					<Button
-						title="Upload Offline Data"
+						title="Get vessels from phone"
 						onPress={() => mergeMutation.mutate()}
 						//isLoading={mergeMutation.isPending}
 					/>
 				)}
-				<Button title="Edit home buttons" onPress={() => setEditButtonsOpen(true)} style={styles.menuItem} variant="outline" />
+				<Button title="Edit homescreen buttons" onPress={() => setEditButtonsOpen(true)} style={styles.menuItem} variant="outline" />
 			</View>
 
 			{/* --- Modal: Vessel List --- */}
