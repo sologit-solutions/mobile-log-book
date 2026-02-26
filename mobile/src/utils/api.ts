@@ -198,3 +198,92 @@ export async function loginUser(email: string, password: string): Promise<AuthRe
 		throw error;
 	}
 }
+
+// ----------------------------
+// --- Vessel API funcitons ---
+// ----------------------------
+
+/**
+ * Retrieves the persisted JWT + constructs the secure auth header
+ */
+async function getAuthHeader() {
+	const token = await SecureStore.getItemAsync("auth_token");
+	if (!token) throw new Error("Authentication token is missing. Please log in again.");
+	return {
+		"Content-Type": "application/json",
+		Authorization: `Bearer ${token}`,
+	};
+}
+
+/**
+ * Executes an authenticated POST request to create a new logbook
+ * Strips out local-only fields to conform strictly to the backend DTO
+ * * @param {string} name - The name of the logbook to create
+ * @returns {Promise<any>} The server-generated db record (including the UUID)
+ * @throws {Error} If the creation fails or the backend rejects the payload
+ */
+export async function createRemoteLogbook(id: string, name: string, type: string, registration: string): Promise<any> {
+	const headers = await getAuthHeader();
+	const response = await fetch(`${API_URL}/logbooks`, {
+		method: "POST",
+		headers,
+		body: JSON.stringify({
+			id: id,
+			name: name, // backend explicitly requires this key
+			vesselType: type.trim() === "" ? null : type,
+			registration: registration.trim() === "" ? null : registration,
+		}),
+	});
+
+	const json = await response.json();
+	if (!response.ok || json.success === false) {
+		throw new Error(json.error?.message || json.message || "Failed to create remote logbook.");
+	}
+
+	// The backend repository returns the created db record, containing the server-generated UUID
+	return json.data;
+}
+
+/**
+ * Executes an authenticated DELETE request to remove a logbook from the backend
+ * * @param {string} logbookId - The UUIDv4 identifier of the logbook to delete
+ * @returns {Promise<any>} The deleted record acknowledgment
+ * @throws {Error} If the deletion fails
+ */
+export async function deleteRemoteLogbook(logbookId: string): Promise<any> {
+	const headers = await getAuthHeader();
+	const response = await fetch(`${API_URL}/logbooks/${logbookId}`, {
+		method: "DELETE",
+		headers,
+	});
+
+	const json = await response.json();
+	if (!response.ok || json.success === false) {
+		throw new Error(json.error?.message || json.message || "Failed to delete remote logbook.");
+	}
+	return json.data;
+}
+
+/**
+ * Fetches all logbooks (vessels) belonging to the authenticated user from the remote backend
+ * Uses the HTTP GET method to retrieve the array of records
+ * * @returns {Promise<any[]>} An array of logbook database records from Prisma
+ * @throws {Error} If the network request fails or the backend rejects the query
+ */
+export async function fetchRemoteLogbooks(): Promise<any[]> {
+	const headers = await getAuthHeader();
+	const response = await fetch(`${API_URL}/logbooks`, {
+		method: "GET",
+		headers,
+	});
+
+	const json = await response.json();
+
+	// Evaluate explicit success flags and HTTP status
+	if (!response.ok || json.success === false) {
+		throw new Error(json.error?.message || json.message || "Failed to fetch remote logbooks.");
+	}
+
+	// Return the array of vessels mapped by the backend repository
+	return json.data;
+}
