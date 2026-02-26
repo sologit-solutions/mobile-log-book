@@ -20,7 +20,7 @@ export const createUser = async (
   if (result.success) {
     const { hash, isActive, updatedAt, ...user } = result.data;
     return {
-      ...result,
+      success: result.success,
       status: 201,
       data: {
         user: user,
