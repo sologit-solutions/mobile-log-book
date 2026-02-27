@@ -155,7 +155,7 @@ export const deleteLogitem = async (input: {
   return { success: true, data: result };
 };
 
-export const syncLogitems = async (input: {
+export const getLatestLogitems = async (input: {
   ownerId: string;
   id: string;
   version: number;

@@ -3,6 +3,7 @@ import idValidator from "../../validators/idValidator.ts";
 
 const logitemValidator = z.object({
   id: idValidator,
+  logbookId: idValidator,
   title: z.string().max(64),
   body: z.string().max(1024).optional(),
   crew: z.number().optional(),
@@ -13,6 +14,9 @@ const logitemValidator = z.object({
   speedThroughWater: z.float64().optional(),
   windSpeed: z.float64().optional(),
   barometer: z.float64().optional(),
+  updatedAt: z.iso.datetime(),
+  createdAt: z.iso.datetime(),
+  isActive: z.boolean()
 });
 
 export type zLogitem = z.infer<typeof logitemValidator>;
