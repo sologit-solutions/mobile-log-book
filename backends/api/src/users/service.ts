@@ -4,6 +4,10 @@ import * as auth from "../utils/authUtils.ts";
 import emailValidator from "./validators/emailValidator.ts";
 import { ENV } from "../configs/env.ts";
 import type { Result } from "../types/result.ts";
+import { get } from "http";
+import { th } from "zod/locales";
+import logger from "../utils/logger.ts";
+import { date } from "zod";
 
 export const createUser = async (
   input: Pick<User, "username" | "email"> & { password: string },
@@ -72,4 +76,89 @@ export const authenticate = async (input: {
   }
 
   return result;
+};
+
+export const sendRecoveryEmail = async (
+  input: { email: string }
+): Promise<Result<object>> => {
+  let user = null;
+  let token = null;
+  const validationResult = emailValidator.safeParse(input.email);
+
+  // check if user input is a valid email and if the user exists in the database
+  if (validationResult.success) {
+    let res = await repository.getUserByEmail({ email: input.email });
+    if (!res.success) {
+      return {
+        success: false,
+        status: 401,
+        error: { code: "401", message: "User not found" },
+      };
+    }
+    user = res.data;
+  } else {
+    return {
+      success: false,
+      status: 401,
+      error: { code: "401", message: "Invalid email" },
+    };
+  }
+
+  // issue recovery token
+  token = auth.issueRecoveryJWT(user.id, ENV.RECOVERY_TOKEN_EXPIRES);
+  logger.info("Recovery token issued for user: " + user.email);
+
+  // send recovery email
+  logger.debug(`User ${user.email} issued recovery token: ${token.token}`); // e-mail sending not implemented yet
+
+  // return email sent confiramtion
+  return {
+    success: true,
+    data: {
+      message: "A recovery email, valid for 10 minutes, has been sent.",
+    },
+  };
+};
+
+export const resetPassword = async (
+  input: { token: string; password: string }
+): Promise<Result<object>> => {
+  let userId = null;
+
+  // verify token and extract user id
+  try {
+    userId = auth.verifyRecoveryJWT(input.token);
+    // fail if id null
+    if (!userId)
+      throw new Error("Invalid or expired token");
+  } catch (err) {
+    return {
+      success: false,
+      status: 401,
+      error: { code: "401", message: "Invalid or expired token" },
+    };
+  }
+
+  // hash new password
+  const newHash = await auth.hashPassword(input.password);
+
+  // update user password in database
+  const result = await repository.SetUserPassword(userId, newHash);
+
+  // check if update was successful
+  if (!result.success) {
+    return {
+      success: false,
+      status: 500,
+      error: { code: "500", message: "Failed to reset password" },
+    };
+  }
+
+  // return password reset confirmation
+  return {
+    success: true,
+    data: {
+      message: "Password reset successfully.",
+    },
+  };
 };
