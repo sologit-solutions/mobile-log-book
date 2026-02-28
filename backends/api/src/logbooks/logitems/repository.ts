@@ -4,6 +4,20 @@ import type { Result } from "../../types/result.ts";
 import { Prisma } from "../../generated/client.ts";
 import type { zLogitem } from "./validators/logitemValidator.ts";
 
+const deletedItem = {
+  title: null,
+  body: null,
+  crew: null,
+  latitude: null,
+  longitude: null,
+  course: null,
+  speedOverGround: null,
+  speedThroughWater: null,
+  windSpeed: null,
+  barometer: null,
+  isActive: false,
+};
+
 const incrementLogbookVersion = async (
   ownerId: string,
   id: string,
@@ -67,6 +81,65 @@ export const createLogs = async (input: {
   return { success: true, status: 201, data: result };
 };
 
+export const updateLogs = async (input: {
+  ownerId: string;
+  logbookId: string;
+  logitems: Partial<zLogitem>[];
+}): Promise<Result<{ count: number }>> => {
+  const { ownerId, logbookId, logitems } = input;
+  const result = await prisma.$transaction(async (tx) => {
+    const version = await incrementLogbookVersion(ownerId, logbookId, tx);
+
+    const data = logitems.map((item) => ({
+      ...item,
+      version,
+      logbookId,
+    }));
+
+    return await tx.logitem.updateMany({
+      where: {
+        logbookId,
+        logbook: {
+          ownerId,
+        },
+      },
+      data,
+    });
+  });
+
+  return { success: true, data: result };
+};
+
+export const deleteMultipleLogs = async (input: {
+  ownerId: string;
+  logbookId: string;
+  logitemIds: string[];
+}): Promise<Result<{ count: number }>> => {
+  const { ownerId, logbookId, logitemIds } = input;
+  const result = await prisma.$transaction(async (tx) => {
+    const version = await incrementLogbookVersion(ownerId, logbookId, tx);
+
+    const data = logitemIds.map((id) => ({
+      id,
+      logbookId,
+      ...deletedItem,
+      version,
+    }));
+
+    return await prisma.logitem.updateMany({
+      where: {
+        logbookId,
+        logbook: {
+          ownerId,
+        },
+      },
+      data,
+    });
+  });
+
+  return { success: true, data: result };
+};
+
 export const getLog = async (input: {
   ownerId: string;
   logbookId: string;
@@ -126,17 +199,7 @@ export const deleteLogitem = async (input: {
     const version = await incrementLogbookVersion(ownerId, logbookId, tx);
 
     const data = {
-      title: null,
-      body: null,
-      crew: null,
-      latitude: null,
-      longitude: null,
-      course: null,
-      speedOverGround: null,
-      speedThroughWater: null,
-      windSpeed: null,
-      barometer: null,
-      isActive: false,
+      ...deletedItem,
       version,
     };
 

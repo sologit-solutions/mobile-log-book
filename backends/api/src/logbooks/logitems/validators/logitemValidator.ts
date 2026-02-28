@@ -16,7 +16,7 @@ const logitemValidator = z.object({
   barometer: z.float64().optional(),
   updatedAt: z.iso.datetime(),
   createdAt: z.iso.datetime(),
-  isActive: z.boolean()
+  isActive: z.boolean(),
 });
 
 export type zLogitem = z.infer<typeof logitemValidator>;
