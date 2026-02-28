@@ -57,6 +57,92 @@ router.post("/:logbook_id/logs", async (req, res) => {
   return await handleRequest(context);
 });
 
+router.put("/:logbook_id/logs", async (req, res) => {
+  // Define validator
+  const validator = z.object({
+    ownerId: idValidator,
+    logbookId: idValidator,
+    logitems: z.array(logitemValidator),
+  });
+
+  const input = {
+    ownerId: req.user!.id,
+    logbookId: req.params.logbook_id,
+    logitems: req.body?.logitems,
+  };
+
+  // Define context
+  const context = {
+    res,
+    input,
+    validator,
+    fun: (input: z.infer<typeof validator>) => repository.updateLogs(input),
+  };
+
+  // Call handler
+  return await handleRequest(context);
+});
+
+router.patch("/:logbook_id/logs", async (req, res) => {
+  // Define validator
+  const validator = z.object({
+    ownerId: idValidator,
+    logbookId: idValidator,
+    logitems: z.array(
+      logitemValidator.partial({
+        logbookId: true,
+        title: true,
+        createdAt: true,
+        isActive: true,
+      }),
+    ),
+  });
+
+  const input = {
+    ownerId: req.user!.id,
+    logbookId: req.params.logbook_id,
+    logitems: req.body?.logitems,
+  };
+
+  // Define context
+  const context = {
+    res,
+    input,
+    validator,
+    fun: (input: z.infer<typeof validator>) => repository.updateLogs(input),
+  };
+
+  // Call handler
+  return await handleRequest(context);
+});
+
+router.delete("/:logbook_id/logs", async (req, res) => {
+  // Define validator
+  const validator = z.object({
+    ownerId: idValidator,
+    logbookId: idValidator,
+    logitemIds: z.array(idValidator),
+  });
+
+  const input = {
+    ownerId: req.user!.id,
+    logbookId: req.params.logbook_id,
+    logitemIds: req.body?.logitemIds,
+  };
+
+  // Define context
+  const context = {
+    res,
+    input,
+    validator,
+    fun: (input: z.infer<typeof validator>) =>
+      repository.deleteMultipleLogs(input),
+  };
+
+  // Call handler
+  return await handleRequest(context);
+});
+
 router.get("/:logbook_id/logs/:item_id", async (req, res) => {
   // Define validator
   const validator = z.object({
@@ -117,7 +203,12 @@ router.patch("/:logbook_id/logs/:item_id", async (req, res) => {
     ownerId: idValidator,
     logbookId: idValidator,
     logitemId: idValidator,
-    logitem: logitemValidator.partial({ title: true }),
+    logitem: logitemValidator.partial({
+      logbookId: true,
+      title: true,
+      createdAt: true,
+      isActive: true,
+    }),
   });
 
   const input = {
@@ -165,7 +256,7 @@ router.delete("/:logbook_id/logs/:item_id", async (req, res) => {
   return await handleRequest(context);
 });
 
-router.get("/:logbook_id/sync", async (req, res) => {
+router.get("/:logbook_id/latest", async (req, res) => {
   // Define validator
   const validator = z.object({
     ownerId: idValidator,
@@ -184,7 +275,8 @@ router.get("/:logbook_id/sync", async (req, res) => {
     res,
     input,
     validator,
-    fun: (input: z.infer<typeof validator>) => repository.syncLogitems(input),
+    fun: (input: z.infer<typeof validator>) =>
+      repository.getLatestLogitems(input),
   };
 
   // Call handler
