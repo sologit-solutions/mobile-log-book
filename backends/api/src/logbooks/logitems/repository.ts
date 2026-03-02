@@ -90,21 +90,28 @@ export const updateLogs = async (input: {
   const result = await prisma.$transaction(async (tx) => {
     const version = await incrementLogbookVersion(ownerId, logbookId, tx);
 
-    const data = logitems.map((item) => ({
-      ...item,
-      version,
-      logbookId,
-    }));
+    const array = await Promise.all(
+      logitems.map(async (item) => {
+        const data = {
+          ...item,
+          version,
+          logbookId,
+        };
 
-    return await tx.logitem.updateMany({
-      where: {
-        logbookId,
-        logbook: {
-          ownerId,
-        },
-      },
-      data,
-    });
+        return await tx.logitem.update({
+          where: {
+            id: item.id,
+            logbookId,
+            logbook: {
+              ownerId,
+            },
+          },
+          data,
+        });
+      }),
+    );
+
+    return { count: array.length };
   });
 
   return { success: true, data: result };
@@ -119,22 +126,29 @@ export const deleteMultipleLogs = async (input: {
   const result = await prisma.$transaction(async (tx) => {
     const version = await incrementLogbookVersion(ownerId, logbookId, tx);
 
-    const data = logitemIds.map((id) => ({
-      id,
-      logbookId,
-      ...deletedItem,
-      version,
-    }));
+    const array = await Promise.all(
+      logitemIds.map(async (id) => {
+        const data = {
+          id,
+          logbookId,
+          ...deletedItem,
+          version,
+        };
 
-    return await prisma.logitem.updateMany({
-      where: {
-        logbookId,
-        logbook: {
-          ownerId,
-        },
-      },
-      data,
-    });
+        return await tx.logitem.update({
+          where: {
+            id,
+            logbookId,
+            logbook: {
+              ownerId,
+            },
+          },
+          data,
+        });
+      }),
+    );
+
+    return { count: array.length };
   });
 
   return { success: true, data: result };
@@ -203,7 +217,7 @@ export const deleteLogitem = async (input: {
       version,
     };
 
-    return await prisma.logitem.update({
+    return await tx.logitem.update({
       where: {
         id: logitemId,
         logbookId,
