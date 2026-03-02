@@ -1,41 +1,6 @@
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
-
-/**
- * This is only for prototyping and testing the login functionality
- * @param email Users email to login to the application
- * @param password Users password
- * @returns Either users username, or if credentials are invalid returns null
- */
-export async function loginUserOld(email: string, password: string): Promise<UserData | null> {
-	// Simulate a short network delay for realism
-	await new Promise((resolve) => setTimeout(resolve, 500));
-
-	if (email === "eikka@moikka.fi" && password === "moikka") {
-		return {
-			id: "mock-id-eikka",
-			name: "eikka",
-			email: "eikka@moikka.fi",
-		};
-	}
-
-	return null;
-}
-
-// This is only temporary for demonstration purposes
-export async function registerUserTemp(email: string, username: string, password: string): Promise<UserData | null> {
-	// Simulate a short network delay for realism during presentation
-	await new Promise((resolve) => setTimeout(resolve, 800));
-
-	console.log("Mock Registration initiated for:", { email, username });
-
-	// Return a success object immediately
-	return {
-		id: "temp-id-" + Math.floor(Math.random() * 10000),
-		name: username,
-		email: email,
-	};
-}
+import { DBLogItem } from "@/src/types/db";
 
 /**
  * Resolves the backend API base URL via Expo's build-time environment injection
@@ -102,9 +67,9 @@ export async function registerUser(email: string, username: string, password: st
 		}
 
 		// Extract authorization payload
-		const accessToken = json.data?.accessToken?.token;
-		const refreshToken = json.data?.refreshToken?.token;
-		const backendUserId = json.data?.user?.userId;
+		const accessToken = json.data?.accessToken?.token || json.data?.accessToken;
+		const refreshToken = json.data?.refreshToken?.token || json.data?.refreshToken;
+		const backendUserId = json.data?.user?.id || json.data?.user?.userId;
 
 		if (!accessToken || !backendUserId) {
 			throw new Error("Critical: Server did not return expected authentication payload.");
@@ -286,4 +251,150 @@ export async function fetchRemoteLogbooks(): Promise<any[]> {
 
 	// Return the array of vessels mapped by the backend repository
 	return json.data;
+}
+
+// ------------------------------
+// --- Log item API functions ---
+// ------------------------------
+
+/**
+ * Pushes an array of locally created log items to the backend
+ * Uses POST to append new items to the remote db
+ */
+export async function pushRemoteLogItems(logbookId: string, localItems: DBLogItem[]): Promise<any> {
+	const headers = await getAuthHeader();
+
+	// Map the SQLite snake_case columns to the backend's expected camelCase JSON
+	const payload = localItems.map((item) => ({
+		id: item.id,
+		logbookId: logbookId,
+		title: item.title,
+		body: item.body ? item.body : undefined,
+		latitude: item.latitude,
+		longitude: item.longitude,
+		createdAt: item.created_at,
+		updatedAt: item.updated_at,
+		isActive: true, // New items are always active
+	}));
+
+	const response = await fetch(`${API_URL}/logbooks/${logbookId}/logs`, {
+		method: "POST",
+		headers,
+		body: JSON.stringify({ logitems: payload }),
+	});
+
+	const json = await response.json();
+	console.log("RAW SERVER POST RESPONSE:", JSON.stringify(json, null, 2));
+
+	if (!response.ok || json.success === false) {
+		throw new Error(json.error?.message || json.message || "Failed to push log items.");
+	}
+
+	return json.data;
+}
+
+/**
+ * Pushes edits of locally modified log items to the backend
+ * Uses PUT to update existing records in the remote db
+ */
+export async function updateRemoteLogItems(logbookId: string, localItems: DBLogItem[]): Promise<any> {
+	const headers = await getAuthHeader();
+
+	// Loop through the array and hit the singular PUT endpoint one by one
+	// to temporarily bypass the broken bulk-update backend route
+	for (const localItem of localItems) {
+		const payload = {
+			id: localItem.id,
+			logbookId: logbookId,
+			title: localItem.title,
+			body: localItem.body ? localItem.body : undefined,
+			latitude: localItem.latitude,
+			longitude: localItem.longitude,
+			createdAt: localItem.created_at,
+			updatedAt: localItem.updated_at,
+			isActive: true,
+		};
+
+		const response = await fetch(`${API_URL}/logbooks/${logbookId}/logs/${localItem.id}`, {
+			method: "PUT",
+			headers,
+			// The singular endpoint strictly expects the object to be wrapped in a "logitem" key
+			body: JSON.stringify({ logitem: payload }),
+		});
+
+		const json = await response.json();
+
+		if (!response.ok || json.success === false) {
+			throw new Error(json.error?.message || json.message || "Failed to update remote log item.");
+		}
+	}
+
+	return { success: true };
+	/*
+	const payload = localItems.map((item) => ({
+		id: item.id,
+		logbookId: logbookId,
+		title: item.title,
+		body: item.body ? item.body : undefined,
+		latitude: item.latitude,
+		longitude: item.longitude,
+		createdAt: item.created_at,
+		updatedAt: item.updated_at,
+		isActive: true,
+	}));
+
+	const response = await fetch(`${API_URL}/logbooks/${logbookId}/logs`, {
+		method: "PUT", // <--- THE CRITICAL DIFFERENCE
+		headers,
+		body: JSON.stringify({ logitems: payload }),
+	});
+
+	const json = await response.json();
+
+	if (!response.ok || json.success === false) {
+		throw new Error(json.error?.message || json.message || JSON.stringify(json));
+	}
+
+	return json.data;
+	 */
+}
+
+/**
+ * Tells the backend to mark specific log items as deleted
+ */
+export async function deleteRemoteLogItems(logbookId: string, itemIds: string[]): Promise<any> {
+	const headers = await getAuthHeader();
+
+	// Loop through the array and hit the singular delete endpoint one by one
+	// to temporarily bypass the broken bulk-delete backend route
+	for (const itemId of itemIds) {
+		const response = await fetch(`${API_URL}/logbooks/${logbookId}/logs/${itemId}`, {
+			method: "DELETE",
+			headers,
+		});
+
+		const json = await response.json();
+		if (!response.ok || json.success === false) {
+			throw new Error(json.error?.message || json.message || "Failed to delete remote log items.");
+		}
+	}
+
+	return { success: true };
+
+	/*
+	const headers = await getAuthHeader();
+
+	const response = await fetch(`${API_URL}/logbooks/${logbookId}/logs`, {
+		method: "DELETE",
+		headers,
+		body: JSON.stringify({ logitemIds: itemIds }),
+	});
+
+	const json = await response.json();
+	if (!response.ok || json.success === false) {
+		throw new Error(json.error?.message || json.message || "Failed to delete remote log items.");
+	}
+
+	return json.data;
+	 */
 }

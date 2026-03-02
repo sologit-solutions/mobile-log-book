@@ -19,7 +19,13 @@ import { Button } from "@/src/components/Button";
 import { Input } from "@/src/components/Input";
 import { Card } from "@/src/components/Card";
 import { useOwnTheme } from "@/src/context/ThemeContext";
-import { useVessels, useAddVessel, useDeleteVessel, useSyncVessels } from "@/src/features/logbooks/hooks";
+import {
+	useVessels,
+	useAddVessel,
+	useDeleteVessel,
+	useSyncVessels,
+	useMergeLocalData
+} from "@/src/features/logbooks/hooks";
 import { useAuthStore } from "@/src/store/authStore";
 import { useLogbookStore } from "@/src/store/logbookStore";
 import { useButtonStore } from "@/src/store/buttonStore";
@@ -39,6 +45,7 @@ export default function Profile() {
 	const addVesselMutation = useAddVessel();
 	const deleteVesselMutation = useDeleteVessel();
 	const syncVesselsMutation = useSyncVessels();
+	const mergeMutation = useMergeLocalData();
 
 	// UI State
 	const [isVesselListOpen, setVesselListOpen] = useState(false);
@@ -50,7 +57,8 @@ export default function Profile() {
 	const [newButtonLabel, setNewButtonLabel] = useState("");
 
 	const handleLogout = async () => {
-		await logout();
+		logout();
+		setCurrentLogbook(null);
 		router.replace("/");
 	};
 
@@ -105,12 +113,19 @@ export default function Profile() {
 			<View style={styles.menu}>
 				<Button title="Add New Vessel" onPress={() => setAddVesselOpen(true)} style={styles.menuItem} />
 				<Button
-					title="Get vessels from db"
+					title="Get vessels from server"
 					onPress={() => syncVesselsMutation.mutate()}
 					loading={syncVesselsMutation.isPending}
 					style={styles.menuItem}
 				/>
-				<Button title="Edit home buttons" onPress={() => setEditButtonsOpen(true)} style={styles.menuItem} variant="outline" />
+				{user && (
+					<Button
+						title="Get vessels from phone"
+						onPress={() => mergeMutation.mutate()}
+						//isLoading={mergeMutation.isPending}
+					/>
+				)}
+				<Button title="Edit homescreen buttons" onPress={() => setEditButtonsOpen(true)} style={styles.menuItem} variant="outline" />
 			</View>
 
 			{/* --- Modal: Vessel List --- */}
@@ -118,6 +133,7 @@ export default function Profile() {
 				<View style={styles.modalOverlay}>
 					<View style={[styles.modalContent, { backgroundColor: theme.colors.background, borderColor: theme.colors.surface }]}>
 						<Text style={[styles.modalTitle, { color: theme.colors.textPrimary }]}>Select Vessel</Text>
+						<Text style={[styles.longPressHint, { color: theme.colors.textSecondary }]}>Long press to delete</Text>
 
 						{/* List Content */}
 						<FlatList
@@ -126,21 +142,36 @@ export default function Profile() {
 							style={{ maxHeight: 300, width: "100%", marginBottom: 10 }}
 							renderItem={({ item }) => (
 								<TouchableOpacity
-									style={styles.vesselItem}
+									style={[styles.vesselCard, { backgroundColor: theme.colors.background }]}
 									onPress={() => {
 										setCurrentLogbook({ id: item.id, name: item.name });
 										setVesselListOpen(false);
 									}}
+									onLongPress={() => {
+										Alert.alert(
+											"Delete Vessel",
+											`Are you sure you want to permanently delete "${item.name}"?`,
+											[
+												{ text: "Cancel", style: "cancel" },
+												{
+													text: "Delete",
+													style: "destructive",
+													onPress: () => handleDeleteVessel(item.id)
+												}
+											]
+										);
+									}}
+									delayLongPress={500}
 								>
-									<Text style={{ color: theme.colors.textPrimary, fontSize: 18 }}>{item.name}</Text>
-
-									{/* DELETE BUTTON - Styled to match Logout */}
-									<TouchableOpacity
-										onPress={() => handleDeleteVessel(item.id)}
-										style={[styles.deleteBtn, { backgroundColor: theme.colors.danger }]}
-									>
-										<Text style={styles.btnTextWhite}>Delete</Text>
-									</TouchableOpacity>
+									<View style={{ flex: 1 }}>
+										<Text
+											style={[styles.vesselName, { color: theme.colors.textPrimary }]}
+											numberOfLines={1}
+											ellipsizeMode="tail"
+										>
+											{item.name}
+										</Text>
+									</View>
 								</TouchableOpacity>
 							)}
 						/>
@@ -332,7 +363,7 @@ const styles = StyleSheet.create({
 	modalTitle: {
 		fontSize: 22,
 		fontWeight: "bold",
-		marginBottom: 20,
+		marginBottom: 5,
 		textAlign: "center",
 	},
 	modalActions: {
@@ -398,5 +429,19 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		paddingHorizontal: 20,
 		borderRadius: 10,
+	},
+	sectionHeader: {
+		marginBottom: 10,
+	},
+	longPressHint: {
+		fontSize: 12,
+		textAlign: "center",
+	},
+	vesselCard: {
+		padding: 20,
+		borderBottomWidth: 1,
+		borderColor: '#eee',
+		flexDirection: 'row',
+		alignItems: 'center',
 	},
 });
