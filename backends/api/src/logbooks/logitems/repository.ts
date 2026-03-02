@@ -75,6 +75,7 @@ export const createLogs = async (input: {
 
     return await tx.logitem.createMany({
       data,
+      skipDuplicates: true,
     });
   });
 
