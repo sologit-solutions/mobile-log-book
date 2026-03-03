@@ -4,6 +4,20 @@ import type { Result } from "../../types/result.ts";
 import { Prisma } from "../../generated/client.ts";
 import type { zLogitem } from "./validators/logitemValidator.ts";
 
+const deletedItem = {
+  title: null,
+  body: null,
+  crew: null,
+  latitude: null,
+  longitude: null,
+  course: null,
+  speedOverGround: null,
+  speedThroughWater: null,
+  windSpeed: null,
+  barometer: null,
+  isActive: false,
+};
+
 const incrementLogbookVersion = async (
   ownerId: string,
   id: string,
@@ -61,10 +75,84 @@ export const createLogs = async (input: {
 
     return await tx.logitem.createMany({
       data,
+      skipDuplicates: true,
     });
   });
 
   return { success: true, status: 201, data: result };
+};
+
+export const updateLogs = async (input: {
+  ownerId: string;
+  logbookId: string;
+  logitems: Partial<zLogitem>[];
+}): Promise<Result<{ count: number }>> => {
+  const { ownerId, logbookId, logitems } = input;
+  const result = await prisma.$transaction(async (tx) => {
+    const version = await incrementLogbookVersion(ownerId, logbookId, tx);
+
+    const array = await Promise.all(
+      logitems.map(async (item) => {
+        const data = {
+          ...item,
+          version,
+          logbookId,
+        };
+
+        return await tx.logitem.update({
+          where: {
+            id: item.id,
+            logbookId,
+            logbook: {
+              ownerId,
+            },
+          },
+          data,
+        });
+      }),
+    );
+
+    return { count: array.length };
+  });
+
+  return { success: true, data: result };
+};
+
+export const deleteMultipleLogs = async (input: {
+  ownerId: string;
+  logbookId: string;
+  logitemIds: string[];
+}): Promise<Result<{ count: number }>> => {
+  const { ownerId, logbookId, logitemIds } = input;
+  const result = await prisma.$transaction(async (tx) => {
+    const version = await incrementLogbookVersion(ownerId, logbookId, tx);
+
+    const array = await Promise.all(
+      logitemIds.map(async (id) => {
+        const data = {
+          id,
+          logbookId,
+          ...deletedItem,
+          version,
+        };
+
+        return await tx.logitem.update({
+          where: {
+            id,
+            logbookId,
+            logbook: {
+              ownerId,
+            },
+          },
+          data,
+        });
+      }),
+    );
+
+    return { count: array.length };
+  });
+
+  return { success: true, data: result };
 };
 
 export const getLog = async (input: {
@@ -126,21 +214,11 @@ export const deleteLogitem = async (input: {
     const version = await incrementLogbookVersion(ownerId, logbookId, tx);
 
     const data = {
-      title: null,
-      body: null,
-      crew: null,
-      latitude: null,
-      longitude: null,
-      course: null,
-      speedOverGround: null,
-      speedThroughWater: null,
-      windSpeed: null,
-      barometer: null,
-      isActive: false,
+      ...deletedItem,
       version,
     };
 
-    return await prisma.logitem.update({
+    return await tx.logitem.update({
       where: {
         id: logitemId,
         logbookId,
@@ -155,15 +233,15 @@ export const deleteLogitem = async (input: {
   return { success: true, data: result };
 };
 
-export const syncLogitems = async (input: {
+export const getLatestLogitems = async (input: {
   ownerId: string;
-  id: string;
+  logbookId: string;
   version: number;
 }): Promise<Result<Logitem[]>> => {
-  const { ownerId, id, version } = input;
+  const { ownerId, logbookId, version } = input;
   const result = await prisma.logitem.findMany({
     where: {
-      id,
+      logbookId,
       logbook: {
         ownerId,
       },
