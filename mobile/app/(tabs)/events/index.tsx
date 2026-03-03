@@ -1,5 +1,5 @@
-import React from "react";
-import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, Alert, Platform } from "react-native";
+import React, {useEffect, useState} from "react";
+import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, Alert, Platform, RefreshControl } from "react-native";
 import { useRouter } from "expo-router";
 
 import { File, Paths, Directory } from 'expo-file-system';
@@ -8,7 +8,7 @@ import * as Sharing from 'expo-sharing';
 import { Screen } from "@/src/components/Screen";
 import { Card } from "@/src/components/Card";
 import { useOwnTheme } from "@/src/context/ThemeContext";
-import { useLogItems } from "@/src/features/logbook/hooks";
+import { useLogItems, useSyncLogItems } from "@/src/features/logbook/hooks";
 import { useLogbookStore } from "@/src/store/logbookStore";
 import { DBLogItem } from "@/src/types/db";
 import { Button } from "@/src/components/Button";
@@ -20,6 +20,20 @@ export default function EventList() {
 
     // React Query handles loading/error/data automatically
     const { data: logs, isLoading } = useLogItems(currentLogbook?.id);
+
+    // initialise sync engine
+    const syncMutation = useSyncLogItems();
+
+    // state to prevent infinite autofetching
+    const [hasInitialFetchRun, setHasInitialFetchRun] = useState(false);
+
+    // Automatic fetch
+    useEffect(() => {
+        if (currentLogbook?.id && !hasInitialFetchRun) {
+            syncMutation.mutate(currentLogbook.id);
+            setHasInitialFetchRun(true);
+        }
+    }, [currentLogbook?.id, hasInitialFetchRun, syncMutation]);
 
 const handleExport = async () => {
         if (!logs || logs.length === 0) {
@@ -169,6 +183,17 @@ return (
                                     No events recorded for {currentLogbook.name}.
                                 </Text>
                             </View>
+                        }
+                        refreshControl={
+                            <RefreshControl
+                                refreshing={syncMutation.isPending}
+                                onRefresh={() => {
+                                    if (currentLogbook?.id) {
+                                        syncMutation.mutate(currentLogbook.id);
+                                    }
+                                }}
+                                tintColor={theme.colors.primary}
+                            />
                         }
                     />
                 )}

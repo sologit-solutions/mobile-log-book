@@ -256,18 +256,18 @@ router.delete("/:logbook_id/logs/:item_id", async (req, res) => {
   return await handleRequest(context);
 });
 
-router.get("/:logbook_id/latest", async (req, res) => {
+router.post("/:logbook_id/latest", async (req, res) => {
   // Define validator
   const validator = z.object({
     ownerId: idValidator,
     logbookId: idValidator,
-    version: z.number().min(1),
+    version: z.number().min(0),
   });
 
   const input = {
     ownerId: req.user!.id,
     logbookId: req.params.logbook_id,
-    version: req.body.version,
+    version: req.body?.version,
   };
 
   // Define context

@@ -300,37 +300,6 @@ export async function pushRemoteLogItems(logbookId: string, localItems: DBLogIte
 export async function updateRemoteLogItems(logbookId: string, localItems: DBLogItem[]): Promise<any> {
 	const headers = await getAuthHeader();
 
-	// Loop through the array and hit the singular PUT endpoint one by one
-	// to temporarily bypass the broken bulk-update backend route
-	for (const localItem of localItems) {
-		const payload = {
-			id: localItem.id,
-			logbookId: logbookId,
-			title: localItem.title,
-			body: localItem.body ? localItem.body : undefined,
-			latitude: localItem.latitude,
-			longitude: localItem.longitude,
-			createdAt: localItem.created_at,
-			updatedAt: localItem.updated_at,
-			isActive: true,
-		};
-
-		const response = await fetch(`${API_URL}/logbooks/${logbookId}/logs/${localItem.id}`, {
-			method: "PUT",
-			headers,
-			// The singular endpoint strictly expects the object to be wrapped in a "logitem" key
-			body: JSON.stringify({ logitem: payload }),
-		});
-
-		const json = await response.json();
-
-		if (!response.ok || json.success === false) {
-			throw new Error(json.error?.message || json.message || "Failed to update remote log item.");
-		}
-	}
-
-	return { success: true };
-	/*
 	const payload = localItems.map((item) => ({
 		id: item.id,
 		logbookId: logbookId,
@@ -356,32 +325,13 @@ export async function updateRemoteLogItems(logbookId: string, localItems: DBLogI
 	}
 
 	return json.data;
-	 */
 }
 
 /**
  * Tells the backend to mark specific log items as deleted
  */
 export async function deleteRemoteLogItems(logbookId: string, itemIds: string[]): Promise<any> {
-	const headers = await getAuthHeader();
 
-	// Loop through the array and hit the singular delete endpoint one by one
-	// to temporarily bypass the broken bulk-delete backend route
-	for (const itemId of itemIds) {
-		const response = await fetch(`${API_URL}/logbooks/${logbookId}/logs/${itemId}`, {
-			method: "DELETE",
-			headers,
-		});
-
-		const json = await response.json();
-		if (!response.ok || json.success === false) {
-			throw new Error(json.error?.message || json.message || "Failed to delete remote log items.");
-		}
-	}
-
-	return { success: true };
-
-	/*
 	const headers = await getAuthHeader();
 
 	const response = await fetch(`${API_URL}/logbooks/${logbookId}/logs`, {
@@ -396,5 +346,25 @@ export async function deleteRemoteLogItems(logbookId: string, itemIds: string[])
 	}
 
 	return json.data;
-	 */
+}
+
+/**
+ * Fetches only the map pins that have been created, updated, or deleted since our last local version.
+ */
+export async function fetchLatestRemoteLogItems(logbookId: string, currentVersion: number): Promise<any[]> {
+	const headers = await getAuthHeader();
+
+	const response = await fetch(`${API_URL}/logbooks/${logbookId}/latest`, {
+		method: "POST",
+		headers,
+		body: JSON.stringify({ version: currentVersion }),
+	});
+
+	const json = await response.json();
+
+	if (!response.ok || json.success === false) {
+		throw new Error(json.error?.message || json.message || "Failed to pull latest log items.");
+	}
+
+	return json.data;
 }

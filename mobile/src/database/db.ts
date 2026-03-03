@@ -205,3 +205,60 @@ export async function assignLocalDataToUser(db: SQLiteDatabase, userId: string):
 	// Returns the number of vessels that were moved to the new account
 	return result.changes;
 }
+
+/**
+ * Finds all offline items that have not been successfully pushed to the server
+ */
+export async function getPendingLogItems(db: SQLiteDatabase, logbookId: string) {
+	return db.getAllAsync<DBLogItem>(
+		`SELECT * FROM log_items WHERE logbook_id = ? AND version = 0`,
+		logbookId
+	);
+}
+
+/**
+ * Finds the highest version number currently stored on this device for a specific logbook
+ */
+export async function getHighestLogItemVersion(db: SQLiteDatabase, logbookId: string): Promise<number> {
+	const result = await db.getFirstAsync<{ max_version: number }>(
+		`SELECT MAX(version) as max_version FROM log_items WHERE logbook_id = ?`,
+		logbookId
+	);
+	return result?.max_version || 0;
+}
+
+/**
+ * Intelligently merges remote server items into the local SQLite db
+ */
+export async function mergeRemoteLogItems(db: SQLiteDatabase, logbookId: string, remoteItems: any[]): Promise<void> {
+	await db.withTransactionAsync(async () => {
+		for (const item of remoteItems) {
+			if (item.isActive === false) {
+				// wipe it locally if server says it is deleted
+				await db.runAsync(`DELETE FROM log_items WHERE id = ?`, item.id);
+			} else {
+				// insert the new log entry, or update an existing one
+				await db.runAsync(
+					`INSERT INTO log_items (id, logbook_id, title, body, latitude, longitude, created_at, updated_at, version)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     ON CONFLICT(id) DO UPDATE SET
+                     title = excluded.title,
+                     body = excluded.body,
+                     latitude = excluded.latitude,
+                     longitude = excluded.longitude,
+                     updated_at = excluded.updated_at,
+                     version = excluded.version`,
+					item.id,
+					logbookId,
+					item.title,
+					item.body || null, // Safely handle null descriptions
+					item.latitude,
+					item.longitude,
+					item.createdAt,
+					item.updatedAt,
+					item.version
+				);
+			}
+		}
+	});
+}
