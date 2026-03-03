@@ -235,13 +235,13 @@ export const deleteLogitem = async (input: {
 
 export const getLatestLogitems = async (input: {
   ownerId: string;
-  id: string;
+  logbookId: string;
   version: number;
 }): Promise<Result<Logitem[]>> => {
-  const { ownerId, id, version } = input;
+  const { ownerId, logbookId, version } = input;
   const result = await prisma.logitem.findMany({
     where: {
-      id,
+      logbookId,
       logbook: {
         ownerId,
       },

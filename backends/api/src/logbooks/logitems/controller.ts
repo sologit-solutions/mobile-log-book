@@ -260,13 +260,13 @@ router.get("/:logbook_id/latest", async (req, res) => {
   // Define validator
   const validator = z.object({
     ownerId: idValidator,
-    id: idValidator,
+    logbookId: idValidator,
     version: z.number().min(1),
   });
 
   const input = {
     ownerId: req.user!.id,
-    id: req.params.logbook_id,
+    logbookId: req.params.logbook_id,
     version: req.body.version,
   };
 
