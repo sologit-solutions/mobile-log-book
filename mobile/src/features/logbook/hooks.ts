@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSQLiteContext } from "expo-sqlite";
-import { getLogItems, addLogItem, deleteLogItem, updateLogItem, getLogItemById } from "@/src/database/db";
-import { pushRemoteLogItems, deleteRemoteLogItems, updateRemoteLogItems } from "@/src/utils/api";
+import { getLogItems, addLogItem, deleteLogItem, updateLogItem, getLogItemById, getPendingLogItems, getHighestLogItemVersion, mergeRemoteLogItems } from "@/src/database/db";
+import { pushRemoteLogItems, deleteRemoteLogItems, updateRemoteLogItems, fetchLatestRemoteLogItems } from "@/src/utils/api";
 import { useAuthStore } from "@/src/store/authStore";
 
 export const LOG_ITEM_KEYS = {
@@ -105,6 +105,46 @@ export function useDeleteLogItem() {
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: LOG_ITEM_KEYS.all });
+		},
+	});
+}
+
+/**
+ * The sync engine: Pushes offline edits, then pulls the latest server changes
+ */
+export function useSyncLogItems() {
+	const db = useSQLiteContext();
+	const queryClient = useQueryClient();
+	// Extract only the ID to prevent unnecessary re-renders if other user properties change
+	const userId = useAuthStore((state) => state.user?.id);
+
+	return useMutation({
+		mutationFn: async (logbookId: string) => {
+			if (!userId) throw new Error("Authentication required for synchronization.");
+
+			// --- upload local edits ---
+			const pendingItems = await getPendingLogItems(db, logbookId);
+			if (pendingItems.length > 0) {
+				await pushRemoteLogItems(logbookId, pendingItems);
+			}
+
+			// --- fetch remotes ---
+			const currentVersion = await getHighestLogItemVersion(db, logbookId);
+			const newItems = await fetchLatestRemoteLogItems(logbookId, currentVersion);
+
+			// --- apply to local db ---
+			if (newItems?.length > 0) {
+				await mergeRemoteLogItems(db, logbookId, newItems);
+			}
+
+			return true;
+		},
+		onSuccess: () => {
+			// refresh the UI arrays
+			queryClient.invalidateQueries({ queryKey: LOG_ITEM_KEYS.all });
+		},
+		onError: (error) => {
+			console.error("[Sync Engine] Synchronization fatally failed:", error);
 		},
 	});
 }
