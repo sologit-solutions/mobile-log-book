@@ -38,7 +38,10 @@ export default function EventDetail() {
     }, [log]);
 
     const handleUpdate = () => {
-        if (!logId) return;
+        if (!logId || !currentLogbook?.id) {
+            Alert.alert("Error", "Missing log or vessel info");
+            return;
+        }
 
         // Validate & Parse Location
         const newLat = parseFloat(latStr);
@@ -55,7 +58,8 @@ export default function EventDetail() {
                 title: titleText,
                 body: bodyText.trim() === "" ? null : bodyText,
                 lat: newLat,
-                lon: newLon
+                lon: newLon,
+                logbookId: currentLogbook.id
             },
             {
                 onSuccess: () => {
@@ -70,14 +74,14 @@ export default function EventDetail() {
     };
 
     const handleDelete = () => {
-        if (!logId) return;
+        if (!logId || !currentLogbook?.id) return;
         Alert.alert("Confirm", "Delete this event?", [
             { text: "Cancel", style: "cancel" },
             {
                 text: "Delete",
                 style: "destructive",
                 onPress: () => {
-                    deleteMutation.mutate(logId, {
+                    deleteMutation.mutate({id: logId, logbookId: currentLogbook.id}, {
                         onSuccess: () => router.back()
                     });
                 }
