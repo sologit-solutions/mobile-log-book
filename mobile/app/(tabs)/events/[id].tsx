@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Alert, Platform, TouchableOpacity, ScrollView, KeyboardAvoidingView } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { View, Text, StyleSheet, Alert, Platform, TouchableOpacity, ScrollView, KeyboardAvoidingView, Keyboard } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Screen } from "@/src/components/Screen";
 import { Button } from "@/src/components/Button";
@@ -26,6 +26,32 @@ export default function EventDetail() {
     const [bodyText, setBodyText] = useState("");
     const [latStr, setLatStr] = useState("");
     const [lonStr, setLonStr] = useState("");
+
+    const scrollViewRef = useRef<ScrollView>(null);
+    const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+    const [isBodyFocused, setIsBodyFocused] = useState(false);
+
+    useEffect(() => {
+        const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+        const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+        const showSubscription = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
+        const hideSubscription = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
+
+        return () => {
+            showSubscription.remove();
+            hideSubscription.remove();
+        };
+    }, []);
+
+    useEffect(() => {
+        if (isKeyboardVisible && isBodyFocused) {
+            // A tiny 100ms delay ensures the 20px spacer has finished rendering
+            setTimeout(() => {
+                scrollViewRef.current?.scrollToEnd({ animated: true });
+            }, 100);
+        }
+    }, [isKeyboardVisible, isBodyFocused]);
 
     // Sync state when data loads
     useEffect(() => {
@@ -127,8 +153,11 @@ export default function EventDetail() {
                 style={{ flex: 1 }}
             >
                 <ScrollView
+                    ref={scrollViewRef}
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                    automaticallyAdjustKeyboardInsets={true}
                 >
                     {/* Logbook Name (Read Only) */}
                     <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Vessel</Text>
@@ -169,29 +198,32 @@ export default function EventDetail() {
                         style={{ height: 55 }}
                     />
 
-                    {/* New Optional Body Input */}
+                    {/* Optional Body Input */}
                     <Input
                         label="Detailed Log (Optional)"
                         value={bodyText}
                         onChangeText={setBodyText}
                         multiline
                         style={{ height: 120, textAlignVertical: 'top' }}
+                        onFocus={() => setIsBodyFocused(true)}
+                        onBlur={() => setIsBodyFocused(false)}
                     />
 
-                    {/* Spacer increased to ensure content isn't hidden behind the floating button */}
-                    <View style={styles.bottomSpacer} />
+                    <View style={{ height: isKeyboardVisible ? 20 : 160 }} />
                 </ScrollView>
             </KeyboardAvoidingView>
 
             {/* --- STICKY BOTTOM BUTTON --- */}
-            <View style={styles.stickyFooter}>
-                <Button
-                    title="Save Changes"
-                    onPress={handleUpdate}
-                    loading={updateMutation.isPending}
-                    style={styles.saveBtn}
-                />
-            </View>
+            {!isKeyboardVisible && (
+                <View style={styles.stickyFooter}>
+                    <Button
+                        title="Save Changes"
+                        onPress={handleUpdate}
+                        loading={updateMutation.isPending}
+                        style={styles.saveBtn}
+                    />
+                </View>
+            )}
         </Screen>
     );
 }

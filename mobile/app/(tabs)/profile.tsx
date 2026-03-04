@@ -192,12 +192,13 @@ export default function Profile() {
 							<View style={[styles.modalContent, { backgroundColor: theme.colors.background, borderColor: theme.colors.surface }]}>
 								<Text style={[styles.modalTitle, { color: theme.colors.textPrimary }]}>New Vessel</Text>
 
-								<Input placeholder="Vessel Name" value={newVessel.name} onChangeText={(t) => setNewVessel({ ...newVessel, name: t })} />
-								<Input placeholder="Type (e.g. Sloop)" value={newVessel.type} onChangeText={(t) => setNewVessel({ ...newVessel, type: t })} />
+								<Input placeholder="Vessel Name" value={newVessel.name} onChangeText={(t) => setNewVessel({ ...newVessel, name: t })} autoCapitalize="none" />
+								<Input placeholder="Type (e.g. Sloop)" value={newVessel.type} onChangeText={(t) => setNewVessel({ ...newVessel, type: t })} autoCapitalize="none" />
 								<Input
 									placeholder="Registration #"
 									value={newVessel.registration}
 									onChangeText={(t) => setNewVessel({ ...newVessel, registration: t })}
+									autoCapitalize="none"
 								/>
 
 								<View style={styles.modalActions}>

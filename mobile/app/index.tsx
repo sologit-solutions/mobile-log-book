@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
 	StyleSheet,
 	View,
@@ -32,6 +32,27 @@ export default function LoginScreen() {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [loading, setLoading] = useState(false);
+
+	// --- Keyboard State ---
+	const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+	useEffect(() => {
+		// iOS uses "Will" for smoother animations, Android relies on "Did"
+		const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+		const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+		const showSubscription = Keyboard.addListener(showEvent, () => {
+			setKeyboardVisible(true);
+		});
+		const hideSubscription = Keyboard.addListener(hideEvent, () => {
+			setKeyboardVisible(false);
+		});
+
+		return () => {
+			showSubscription.remove();
+			hideSubscription.remove();
+		};
+	}, []);
 
 	// --- Modal States ---
 	const [signupVisible, setSignupVisible] = useState(false);
@@ -163,39 +184,46 @@ export default function LoginScreen() {
 	return (
 		<Screen style={styles.container}>
 			<KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-				<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-					<View style={styles.innerContainer}>
-						{/* 1. Main Content: Logo + Form */}
-						<View style={styles.content}>
-							<View style={styles.header}>
-								<Image
-									source={require("@/assets/images/boat-outline.png")}
-									style={[styles.logo, { tintColor: theme.colors.logo }]}
-									resizeMode="contain"
-								/>
-								<Text style={[styles.title, { color: theme.colors.textPrimary }]}>Login to Logify</Text>
-							</View>
+				<ScrollView
+					contentContainerStyle={styles.innerContainer}
+					keyboardShouldPersistTaps="handled"
+					bounces={false}
+					showsVerticalScrollIndicator={false}
+				>
+					{/* 1. Main Content: Logo + Form */}
+					<View style={styles.content}>
+						<View style={styles.header}>
+							<Image
+								source={require("@/assets/images/boat-outline.png")}
+								style={[styles.logo, { tintColor: theme.colors.logo }]}
+								resizeMode="contain"
+							/>
+							<Text style={[styles.title, { color: theme.colors.textPrimary }]}>Login to Logify</Text>
+						</View>
 
-							<View style={styles.formContainer}>
-								<Input
-									placeholder="Email"
-									value={email}
-									onChangeText={setEmail}
-									autoCapitalize="none"
-									keyboardType="email-address"
-									style={styles.bigInput}
-								/>
-								<Input placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry style={styles.bigInput} />
+						<View style={styles.formContainer}>
+							<Input
+								placeholder="Email"
+								value={email}
+								onChangeText={setEmail}
+								autoCapitalize="none"
+								keyboardType="email-address"
+								style={styles.bigInput}
+							/>
+							<Input placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry style={styles.bigInput} />
 
-								<Button title="Sign in" onPress={handleLogin} loading={loading} style={styles.signInBtn} />
+							<Button title="Sign in" onPress={handleLogin} loading={loading} style={styles.signInBtn} />
 
+							{!isKeyboardVisible && (
 								<TouchableOpacity style={styles.forgotPassLink} onPress={() => setForgotPassVisible(true)}>
 									<Text style={[styles.linkText, { color: theme.colors.textPrimary }]}>Forgot Password?</Text>
 								</TouchableOpacity>
-							</View>
+							)}
 						</View>
+					</View>
 
-						{/* 2. Footer: Offline & Sign Up */}
+					{/* 2. Footer: Offline & Sign Up */}
+					{!isKeyboardVisible && (
 						<View style={styles.footer}>
 							<TouchableOpacity
 								onPress={handleOfflineMode}
@@ -210,8 +238,8 @@ export default function LoginScreen() {
 								</Text>
 							</TouchableOpacity>
 						</View>
-					</View>
-				</TouchableWithoutFeedback>
+					)}
+				</ScrollView>
 			</KeyboardAvoidingView>
 
 			{/* ================= MODALS ================= */}
@@ -293,7 +321,7 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	innerContainer: {
-		flex: 1,
+		flexGrow: 1,
 		paddingHorizontal: 30, // Global side padding
 		justifyContent: "space-between", // Pushes footer to bottom
 	},

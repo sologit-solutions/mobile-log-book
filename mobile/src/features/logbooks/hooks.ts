@@ -4,6 +4,7 @@ import { useSQLiteContext } from "expo-sqlite";
 import { getLogbooks, addLogbook, deleteLogbook, syncLogbooks, assignLocalDataToUser } from "@/src/database/db";
 import { createRemoteLogbook, deleteRemoteLogbook, fetchRemoteLogbooks } from "@/src/utils/api";
 import { useAuthStore } from "@/src/store/authStore";
+import {useLogbookStore} from "@/src/store/logbookStore";
 
 export const LOGBOOK_KEYS = {
 	all: (ownerId: string) => ["logbooks", ownerId] as const,
@@ -25,6 +26,8 @@ export function useAddVessel() {
 	const queryClient = useQueryClient();
 	const user = useAuthStore((state) => state.user);
 
+	const { setCurrentLogbook } = useLogbookStore();
+
 	const ownerId = user?.id || "local";
 
 	return useMutation({
@@ -42,8 +45,9 @@ export function useAddVessel() {
 
 			return localId;
 		},
-		onSuccess: () => {
+		onSuccess: (localId, variables) => {
 			queryClient.invalidateQueries({ queryKey: LOGBOOK_KEYS.all(ownerId) });
+			setCurrentLogbook({ id: localId, name: variables.name });
 		},
 	});
 }
