@@ -3,7 +3,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { SQLiteProvider } from "expo-sqlite";
-import { migrateDbIfNeeded } from "@/src/database/db";
+import { MigrationService } from '@/src/database/MigrationService';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Create the client
@@ -33,7 +33,7 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
             {/* 2. Removed AppStateProvider (replaced by Zustand) */}
             <ThemeProvider>
-                <SQLiteProvider databaseName={"logs.db"} onInit={migrateDbIfNeeded}>
+                <SQLiteProvider databaseName={"logs.db"} onInit={MigrationService.migrateDbIfNeeded}>
                     <RootLayoutContent />
                 </SQLiteProvider>
             </ThemeProvider>

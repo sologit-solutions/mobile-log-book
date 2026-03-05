@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Alert } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
-import { getLogbooks, addLogbook, deleteLogbook, syncLogbooks, assignLocalDataToUser } from "@/src/database/db";
+import { LogbookRepository } from '@/src/database/repositories/LogbookRepository';
 import { createRemoteLogbook, deleteRemoteLogbook, fetchRemoteLogbooks } from "@/src/utils/api";
 import { useAuthStore } from "@/src/store/authStore";
 import {useLogbookStore} from "@/src/store/logbookStore";
@@ -17,7 +17,7 @@ export function useVessels() {
 
 	return useQuery({
 		queryKey: LOGBOOK_KEYS.all(ownerId),
-		queryFn: () => getLogbooks(db, ownerId),
+		queryFn: () => LogbookRepository.getLogbooks(db, ownerId),
 	});
 }
 
@@ -32,7 +32,7 @@ export function useAddVessel() {
 
 	return useMutation({
 		mutationFn: async (data: { name: string; type: string; registration: string }) => {
-			const localId = await addLogbook(db, ownerId, data.name, data.type, data.registration);
+			const localId = await LogbookRepository.addLogbook(db, ownerId, data.name, data.type, data.registration);
 
 			// Push to backend
 			if(user?.id){
@@ -61,7 +61,7 @@ export function useDeleteVessel() {
 
 	return useMutation({
 		mutationFn: async (id: string) => {
-			await deleteLogbook(db, id);
+			await LogbookRepository.deleteLogbook(db, id);
 
 			if (user?.id){
 				deleteRemoteLogbook(id).catch((err) => {
@@ -92,7 +92,7 @@ export function useSyncVessels() {
 			if (!user?.id) throw new Error("You must be logged in to sync with the server.");
 
 			const remoteLogbooks = await fetchRemoteLogbooks();
-			await syncLogbooks(db, remoteLogbooks, user.id);
+			await LogbookRepository.syncLogbooks(db, remoteLogbooks, user.id);
 
 			return remoteLogbooks.length;
 		},
@@ -116,10 +116,10 @@ export function useMergeLocalData() {
 			if (!user?.id) throw new Error("You must be logged in to link data.");
 
 			// Re-label local vessels to belong to the new user
-			const movedCount = await assignLocalDataToUser(db, user.id);
+			const movedCount = await LogbookRepository.assignLocalDataToUser(db, user.id);
 
 			// Fetch these newly updated vessels from SQLite
-			const allMyVessels = await getLogbooks(db, user.id);
+			const allMyVessels = await LogbookRepository.getLogbooks(db, user.id);
 
 			// Loop through + push them to the db
 			await Promise.all(allMyVessels.map(async (vessel) => {
