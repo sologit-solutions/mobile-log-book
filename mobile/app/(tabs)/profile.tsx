@@ -87,15 +87,13 @@ export default function Profile() {
 	const handleAddButton = () => {
 		if (!newButtonLabel.trim()) return;
 		addButton(newButtonLabel.trim());
-		setNewButtonLabel(""); // Clear input but keep modal open to add more
+		setNewButtonLabel("");
 	};
 
 	return (
 		<Screen style={styles.container}>
 			{/* --- TOP RIGHT LOGOUT BUTTON (RED) --- */}
-			<TouchableOpacity onPress={handleLogout} style={[styles.headerLogoutBtn, { backgroundColor: theme.colors.danger }]}>
-				<Text style={styles.btnTextWhite}>{mode === "offline" ? "Exit to login screen" : "Logout"}</Text>
-			</TouchableOpacity>
+			<Button title={mode === "offline" ? "Exit to login screen" : "Logout"} variant="danger" shape="pill" onPress={handleLogout} style={{ position: "absolute", top: 0, right: 15, zIndex: 10 }} />
 
 			<View style={styles.header}>
 				<Text style={[styles.userName, { color: theme.colors.textPrimary }]}>{user?.name || "Offline User"}</Text>
@@ -111,21 +109,30 @@ export default function Profile() {
 			</View>
 
 			<View style={styles.menu}>
-				<Button title="Add New Vessel" onPress={() => setAddVesselOpen(true)} style={styles.menuItem} />
+				<Button
+					title="Add New Vessel"
+					onPress={() => setAddVesselOpen(true)}
+				/>
+
 				<Button
 					title="Get vessels from server"
 					onPress={() => syncVesselsMutation.mutate()}
 					loading={syncVesselsMutation.isPending}
-					style={styles.menuItem}
 				/>
+
 				{user && (
 					<Button
 						title="Get vessels from phone"
 						onPress={() => mergeMutation.mutate()}
-						//isLoading={mergeMutation.isPending}
+						loading={mergeMutation.isPending}
 					/>
 				)}
-				<Button title="Edit homescreen buttons" onPress={() => setEditButtonsOpen(true)} style={styles.menuItem} variant="outline" />
+
+				<Button
+					title="Edit homescreen buttons"
+					onPress={() => setEditButtonsOpen(true)}
+					variant="outline"
+				/>
 			</View>
 
 			{/* --- Modal: Vessel List --- */}
@@ -226,12 +233,7 @@ export default function Profile() {
 								buttons.map((item) => (
 									<View key={item.id} style={styles.buttonRowItem}>
 										<Text style={{ color: theme.colors.textPrimary, fontSize: 18 }}>{item.label}</Text>
-										<TouchableOpacity
-											onPress={() => removeButton(item.id)}
-											style={[styles.deleteBtn, { backgroundColor: theme.colors.danger }]}
-										>
-											<Text style={styles.btnTextWhite}>Remove</Text>
-										</TouchableOpacity>
+										<Button title="Remove" variant="danger" shape="small" onPress={() => removeButton(item.id)} />
 									</View>
 								))
 							)}
@@ -250,23 +252,10 @@ export default function Profile() {
 							{/* Two Buttons Row Underneath */}
 							<View style={styles.actionButtonRow}>
 								{/* Add Button */}
-								<TouchableOpacity
-									onPress={handleAddButton}
-									style={[styles.controlBtn, { backgroundColor: theme.colors.primary, flex: 1, marginRight: 10 }]}
-								>
-									<Text style={styles.btnTextWhite}>Add</Text>
-								</TouchableOpacity>
+								<Button title="Add" shape="grid" onPress={handleAddButton} style={{ flex: 1, height: 55, marginRight: 10 }} />
 
 								{/* Done Button */}
-								<TouchableOpacity
-									onPress={() => setEditButtonsOpen(false)}
-									style={[
-										styles.controlBtn,
-										{ backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.textSecondary, flex: 1 },
-									]}
-								>
-									<Text style={{ color: theme.colors.textPrimary, fontWeight: "600" }}>Done</Text>
-								</TouchableOpacity>
+								<Button title="Done" variant="outline" shape="grid" onPress={() => setEditButtonsOpen(false)} style={{ flex: 1, height: 55 }} />
 							</View>
 						</View>
 					</View>
@@ -337,11 +326,6 @@ const styles = StyleSheet.create({
 	menu: {
 		gap: 15,
 		width: "100%",
-	},
-	menuItem: {
-		width: "100%",
-		height: 55,
-		justifyContent: "center",
 	},
 	// --- STANDARD MODAL STYLES ---
 	modalOverlay: {
@@ -415,12 +399,12 @@ const styles = StyleSheet.create({
 		borderBottomColor: "#333",
 	},
 	bottomControlBar: {
-		flexDirection: "column", // Changed to column so items stack vertically
+		flexDirection: "column",
 		borderTopWidth: 1,
 		paddingTop: 15,
 	},
 	actionButtonRow: {
-		flexDirection: "row", // Horizontal row for the two buttons
+		flexDirection: "row",
 		width: "100%",
 		justifyContent: "space-between",
 	},

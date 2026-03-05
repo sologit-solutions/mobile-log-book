@@ -98,15 +98,18 @@ const handleExport = async () => {
     };
 
 	// Show message if no vessel is selected
-	if (!currentLogbook) {
+    if (!currentLogbook) {
         return (
-            <Screen style={styles.centerContainer}>
-                <Text style={[styles.emptyText, { color: theme.colors.textPrimary }]}>
-                    No Vessel Selected
-                </Text>
-                <Text style={{ color: theme.colors.textSecondary, textAlign: 'center', marginBottom: 20 }}>
-                    Please select a vessel to view its logbook.
-                </Text>
+            <Screen style={{ flex: 1, padding: 20 }}>
+                <View style={{ alignItems: 'center', marginTop: 60, marginBottom: 30 }}>
+                    <Text style={[styles.emptyText, { color: theme.colors.textPrimary }]}>
+                        No Vessel Selected
+                    </Text>
+                    <Text style={{ color: theme.colors.textSecondary, textAlign: 'center' }}>
+                        Please select a vessel to view its logbook.
+                    </Text>
+                </View>
+
                 <Button
                     title="Go to Profile"
                     onPress={() => router.navigate("/(tabs)/profile")}
@@ -149,21 +152,12 @@ return (
                     ⛵ {currentLogbook.name}
                 </Text>
 
-                <TouchableOpacity
+                <Button
+                    title="Export CSV"
+                    variant="outline"
+                    shape="pill"
                     onPress={handleExport}
-                    style={[
-                        styles.exportBtn,
-                        {
-                            backgroundColor: theme.colors.surface,
-                            borderColor: theme.colors.textSecondary,
-                            borderWidth: 1
-                        }
-                    ]}
-                >
-                    <Text style={{ color: theme.colors.textPrimary, fontWeight: '600', fontSize: 14 }}>
-                        Export CSV
-                    </Text>
-                </TouchableOpacity>
+                />
             </View>
 
             <View style={{ flex: 1 }}>
@@ -203,7 +197,7 @@ return (
 }
 
 const styles = StyleSheet.create({
-	topBar: {
+    topBar: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -217,21 +211,10 @@ const styles = StyleSheet.create({
         flex: 1,
         marginRight: 10,
     },
-    exportBtn: {
-        paddingVertical: 8,
-        paddingHorizontal: 15,
-        borderRadius: 20,
-        elevation: 3,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-    },
     centerContainer: {
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        //marginTop: 50,
     },
     listContent: {
         padding: 16,
@@ -250,7 +233,7 @@ const styles = StyleSheet.create({
         fontWeight: "600",
         marginBottom: 8,
     },
-	emptyText: {
+    emptyText: {
         fontSize: 20,
         fontWeight: "bold",
         marginBottom: 10,

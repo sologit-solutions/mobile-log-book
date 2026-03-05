@@ -11,7 +11,6 @@ import {
 	KeyboardAvoidingView,
 	Platform,
 	Pressable,
-	TouchableWithoutFeedback,
 	Keyboard,
 } from "react-native";
 import { z } from "zod";
@@ -37,7 +36,6 @@ export default function LoginScreen() {
 	const [isKeyboardVisible, setKeyboardVisible] = useState(false);
 
 	useEffect(() => {
-		// iOS uses "Will" for smoother animations, Android relies on "Did"
 		const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
 		const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
 
@@ -96,18 +94,13 @@ export default function LoginScreen() {
 
 		setLoading(true);
 		try {
-			// Delegate execution
 			const authPayload = await loginUser(email, password);
 
 			if (authPayload) {
-				// Hydrate Zustand store + triggers online mode automatically
 				login(authPayload.user, authPayload.token);
-
-				// Route to the authenticated area
 				router.replace("/(tabs)/home");
 			}
 		} catch (error: any) {
-			// Intercepts 401 Unauthorized or network timeouts
 			Alert.alert("Login Failed", error.message);
 		} finally {
 			setLoading(false);
@@ -119,28 +112,19 @@ export default function LoginScreen() {
 		router.replace("/(tabs)/home");
 	};
 
-	/**
-	 * Orchestrates the user registration flow
-	 * Handles local schema validation, delegates network execution,
-	 * hydrates the global state
-	 * and manages UI routing transitions
-	 */
 	const handleSignup = async () => {
 		if (!signupData.name || !signupData.email || !signupData.password) return Alert.alert("Error", "Fill all fields");
 		if (signupData.password !== signupData.confirm) return Alert.alert("Error", "Passwords do not match");
 
-		// Execute client side validation
 		const validationResult = signupSchema.safeParse(signupData);
 
 		if (!validationResult.success) {
-			// Extract the first validation error message and alert the user
 			const firstError = validationResult.error.issues[0].message;
 			return Alert.alert("Validation Error", firstError);
 		}
 
 		setLoading(true);
 		try {
-			// Delegate network execution
 			const authPayload = await registerUser(signupData.email, signupData.name, signupData.password);
 
 			if (authPayload) {
@@ -148,11 +132,7 @@ export default function LoginScreen() {
 					{
 						text: "OK",
 						onPress: () => {
-							// Hydrate zustand store with real user data + token
-							// This dictates the mode: 'online' state
 							login(authPayload.user, authPayload.token);
-
-							// UI Reset + navigation
 							setSignupVisible(false);
 							setSignupData({ name: "", email: "", password: "", confirm: "" });
 							router.replace("/(tabs)/home");
@@ -161,7 +141,6 @@ export default function LoginScreen() {
 				]);
 			}
 		} catch (error: any) {
-			// Catches network timeouts and explicit backend db rejects
 			Alert.alert("Registration Failed", error.message);
 		} finally {
 			setLoading(false);
@@ -212,7 +191,8 @@ export default function LoginScreen() {
 							/>
 							<Input placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry style={styles.bigInput} />
 
-							<Button title="Sign in" onPress={handleLogin} loading={loading} style={styles.signInBtn} />
+							{/* Unified standard shape for the sign-in button */}
+							<Button title="Sign in" onPress={handleLogin} loading={loading} style={{ marginTop: 10 }} />
 
 							{!isKeyboardVisible && (
 								<TouchableOpacity style={styles.forgotPassLink} onPress={() => setForgotPassVisible(true)}>
@@ -225,12 +205,13 @@ export default function LoginScreen() {
 					{/* 2. Footer: Offline & Sign Up */}
 					{!isKeyboardVisible && (
 						<View style={styles.footer}>
-							<TouchableOpacity
+
+							{/* Unified offline button mapped to the standard layout */}
+							<Button
+								title="Use app offline"
 								onPress={handleOfflineMode}
-								style={[styles.offlineBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.surface }]}
-							>
-								<Text style={[styles.offlineText, { color: theme.colors.textPrimary }]}>Use app offline</Text>
-							</TouchableOpacity>
+								style={{ marginBottom: 10 }}
+							/>
 
 							<TouchableOpacity onPress={() => setSignupVisible(true)} style={styles.signupContainer}>
 								<Text style={{ color: theme.colors.textPrimary }}>
@@ -281,8 +262,8 @@ export default function LoginScreen() {
 								/>
 
 								<View style={styles.modalActions}>
-									<Button title="Cancel" variant="outline" onPress={() => setSignupVisible(false)} style={{ flex: 1, marginRight: 10 }} />
-									<Button title="Sign Up" onPress={handleSignup} style={{ flex: 1, marginLeft: 10 }} />
+									<Button title="Cancel" variant="outline" shape="grid" onPress={() => setSignupVisible(false)} style={{ flex: 1, height: 55, marginRight: 10 }} />
+									<Button title="Sign Up" shape="grid" onPress={handleSignup} loading={loading} style={{ flex: 1, height: 55, marginLeft: 10 }} />
 								</View>
 							</View>
 						</Pressable>
@@ -304,8 +285,8 @@ export default function LoginScreen() {
 								<Input placeholder="Email" value={resetEmail} onChangeText={setResetEmail} autoCapitalize="none" style={styles.bigInput} />
 
 								<View style={styles.modalActions}>
-									<Button title="Cancel" variant="outline" onPress={() => setForgotPassVisible(false)} style={{ flex: 1, marginRight: 10 }} />
-									<Button title="Send Link" onPress={handleResetPassword} style={{ flex: 1, marginLeft: 10 }} />
+									<Button title="Cancel" variant="outline" shape="grid" onPress={() => setForgotPassVisible(false)} style={{ flex: 1, height: 55, marginRight: 10 }} />
+									<Button title="Send Link" shape="grid" onPress={handleResetPassword} style={{ flex: 1, height: 55, marginLeft: 10 }} />
 								</View>
 							</View>
 						</Pressable>
@@ -322,8 +303,8 @@ const styles = StyleSheet.create({
 	},
 	innerContainer: {
 		flexGrow: 1,
-		paddingHorizontal: 30, // Global side padding
-		justifyContent: "space-between", // Pushes footer to bottom
+		paddingHorizontal: 30,
+		justifyContent: "space-between",
 	},
 	content: {
 		flex: 1,
@@ -348,15 +329,11 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 	},
 	formContainer: {
-		width: "100%", // Fills the padded container
+		width: "100%",
 	},
 	bigInput: {
-		height: 55, // Taller than standard
+		height: 55,
 		fontSize: 16,
-	},
-	signInBtn: {
-		marginTop: 10,
-		height: 55, // Match input height
 	},
 	forgotPassLink: {
 		alignItems: "center",
@@ -373,18 +350,6 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		paddingBottom: 40,
 		width: "100%",
-	},
-	offlineBtn: {
-		marginBottom: 10,
-		paddingVertical: 15,
-		borderRadius: 30,
-		borderWidth: 1,
-		width: "100%",
-		alignItems: "center",
-	},
-	offlineText: {
-		fontSize: 16,
-		fontWeight: "600",
 	},
 	signupContainer: {
 		paddingVertical: 10,

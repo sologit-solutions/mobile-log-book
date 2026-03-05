@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, Text, StyleSheet, Alert, Platform, TouchableOpacity, ScrollView, KeyboardAvoidingView, Keyboard } from "react-native";
+import { View, Text, StyleSheet, Alert, Platform, ScrollView, KeyboardAvoidingView, Keyboard } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Screen } from "@/src/components/Screen";
 import { Button } from "@/src/components/Button";
@@ -46,7 +46,6 @@ export default function EventDetail() {
 
     useEffect(() => {
         if (isKeyboardVisible && isBodyFocused) {
-            // A tiny 100ms delay ensures the 20px spacer has finished rendering
             setTimeout(() => {
                 scrollViewRef.current?.scrollToEnd({ animated: true });
             }, 100);
@@ -127,20 +126,10 @@ export default function EventDetail() {
         <Screen style={{ flex: 1 }}>
 
             {/* --- TOP LEFT BACK BUTTON --- */}
-            <TouchableOpacity
-                onPress={() => router.back()}
-                style={[styles.headerBtn, styles.headerBackBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.textSecondary, borderWidth: 1 }]}
-            >
-                <Text style={{ color: theme.colors.textPrimary, fontWeight: '600', fontSize: 14 }}>Back</Text>
-            </TouchableOpacity>
+            <Button title="Back" variant="outline" shape="pill" onPress={() => router.back()} style={{ position: 'absolute', top: 0, left: 15, zIndex: 10 }} />
 
             {/* --- TOP RIGHT DELETE BUTTON --- */}
-            <TouchableOpacity
-                onPress={handleDelete}
-                style={[styles.headerBtn, styles.headerDeleteBtn, { backgroundColor: theme.colors.danger }]}
-            >
-                <Text style={styles.btnTextWhite}>Delete</Text>
-            </TouchableOpacity>
+            <Button title="Delete" variant="danger" shape="pill" onPress={handleDelete} style={{ position: 'absolute', top: 0, right: 15, zIndex: 10 }} />
 
             {/* Header Title (Fixed at top) */}
             <View style={styles.header}>
@@ -216,12 +205,7 @@ export default function EventDetail() {
             {/* --- STICKY BOTTOM BUTTON --- */}
             {!isKeyboardVisible && (
                 <View style={styles.stickyFooter}>
-                    <Button
-                        title="Save Changes"
-                        onPress={handleUpdate}
-                        loading={updateMutation.isPending}
-                        style={styles.saveBtn}
-                    />
+                    <Button title="Save Changes" onPress={handleUpdate} loading={updateMutation.isPending} />
                 </View>
             )}
         </Screen>
