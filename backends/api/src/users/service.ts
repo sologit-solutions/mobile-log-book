@@ -4,10 +4,7 @@ import * as auth from "../utils/authUtils.ts";
 import emailValidator from "./validators/emailValidator.ts";
 import { ENV } from "../configs/env.ts";
 import type { Result } from "../types/result.ts";
-import { get } from "http";
-import { th } from "zod/locales";
 import logger from "../utils/logger.ts";
-import { date } from "zod";
 
 export const createUser = async (
   input: Pick<User, "username" | "email"> & { password: string },
