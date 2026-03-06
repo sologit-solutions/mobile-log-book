@@ -1,9 +1,6 @@
-import React, {useEffect, useState} from "react";
-import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, Alert, Platform, RefreshControl } from "react-native";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, Text, View, FlatList, ActivityIndicator, RefreshControl } from "react-native";
 import { useRouter } from "expo-router";
-
-import { File, Paths, Directory } from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
 
 import { Screen } from "@/src/components/Screen";
 import { Card } from "@/src/components/Card";
@@ -13,90 +10,27 @@ import { useLogbookStore } from "@/src/store/logbookStore";
 import { DBLogItem } from "@/src/types/db";
 import { Button } from "@/src/components/Button";
 
+import { useExportLogs } from "@/src/features/logbook/useExportLogs";
+
 export default function EventList() {
     const { theme } = useOwnTheme();
     const router = useRouter();
-	const { currentLogbook } = useLogbookStore();
+    const { currentLogbook } = useLogbookStore();
 
-    // React Query handles loading/error/data automatically
     const { data: logs, isLoading } = useLogItems(currentLogbook?.id);
-
-    // initialise sync engine
     const syncMutation = useSyncLogItems();
 
-    // state to prevent infinite autofetching
+    // Initialize our hook
+    const { exportToCsv, isExporting } = useExportLogs();
+
     const [hasInitialFetchRun, setHasInitialFetchRun] = useState(false);
 
-    // Automatic fetch
     useEffect(() => {
         if (currentLogbook?.id && !hasInitialFetchRun) {
             syncMutation.mutate(currentLogbook.id);
             setHasInitialFetchRun(true);
         }
     }, [currentLogbook?.id, hasInitialFetchRun, syncMutation]);
-
-const handleExport = async () => {
-        if (!logs || logs.length === 0) {
-            Alert.alert("No Data", "There are no events to export.");
-            return;
-        }
-
-        try {
-            let csvContent = "Date,Time,Event,Details,Latitude,Longitude\n";
-
-            logs.forEach((log) => {
-                const dateObj = new Date(log.created_at);
-
-                const year = dateObj.getFullYear();
-                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-                const day = String(dateObj.getDate()).padStart(2, '0');
-
-                const dateStr = `${year}-${month}-${day}`;
-
-                const timeStr = dateObj.toTimeString().slice(0, 5);
-
-				const cleanTitle = log.title.replace(/,/g, " ");
-                const cleanBody = log.body ? log.body.replace(/,/g, " ") : "";
-
-                csvContent += `${dateStr},${timeStr},${cleanTitle},${cleanBody},${log.latitude},${log.longitude}\n`;
-            });
-
-            const safeName = currentLogbook?.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() || "logs";
-
-            if (Platform.OS === 'android') {
-                const directory = await Directory.pickDirectoryAsync();
-
-                if (directory) {
-                    const file = directory.createFile(`${safeName}_export`, 'text/csv');
-                    file.write(csvContent);
-
-                    Alert.alert("Success", "Logbook successfully saved to your device.");
-                }
-
-            } else {
-                const file = new File(Paths.document, `${safeName}_export.csv`);
-
-                if (!file.exists) {
-                    file.create();
-                }
-                file.write(csvContent);
-
-                if (await Sharing.isAvailableAsync()) {
-                    await Sharing.shareAsync(file.uri, {
-                        mimeType: 'text/csv',
-                        dialogTitle: `Export Logs for ${currentLogbook?.name}`
-                    });
-                } else {
-                    Alert.alert("Error", "File sharing is disabled or unavailable on this device.");
-                }
-            }
-
-        } catch (error: any) {
-            console.error("Export pipeline failed:", error);
-            Alert.alert("Export Error", "A system error occurred while generating or saving the CSV.");
-        }
-    };
-
 	// Show message if no vessel is selected
     if (!currentLogbook) {
         return (
@@ -118,7 +52,7 @@ const handleExport = async () => {
         );
     }
 
-const renderItem = ({ item }: { item: DBLogItem }) => (
+    const renderItem = ({ item }: { item: DBLogItem }) => (
         <Card
             onPress={() => router.push(`/events/${item.id}`)}
             style={styles.card}
@@ -142,7 +76,7 @@ const renderItem = ({ item }: { item: DBLogItem }) => (
         </Card>
     );
 
-return (
+    return (
         <Screen style={{ flex: 1 }}>
             <View style={styles.topBar}>
                 <Text
@@ -156,7 +90,8 @@ return (
                     title="Export CSV"
                     variant="outline"
                     shape="pill"
-                    onPress={handleExport}
+                    onPress={() => exportToCsv(logs, currentLogbook.name)}
+                    loading={isExporting}
                 />
             </View>
 
