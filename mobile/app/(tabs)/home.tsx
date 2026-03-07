@@ -1,67 +1,19 @@
-import React, { useState } from "react";
-import { StyleSheet, View, Text, FlatList, Alert } from "react-native";
+import React from "react";
+import { StyleSheet, View, Text, FlatList } from "react-native";
 import { Screen } from "@/src/components/Screen";
-import { Button } from "@/src/components/Button"; // <-- Import the unified Button
+import { Button } from "@/src/components/Button";
 import { useOwnTheme } from "@/src/context/ThemeContext";
 import { useLogbookStore } from "@/src/store/logbookStore";
 import { useButtonStore } from "@/src/store/buttonStore";
-import { useAddLogItem } from "@/src/features/logbook/hooks";
-import { getCurrentLocation } from "@/src/utils/location";
+
+import { useActionLogger } from "@/src/features/logbook/useActionLogger";
 
 export default function Home() {
     const { theme } = useOwnTheme();
     const { currentLogbook } = useLogbookStore();
     const { buttons } = useButtonStore();
-    const addLogItemMutation = useAddLogItem();
 
-    const [loadingButtonId, setLoadingButtonId] = useState<string | null>(null);
-
-    const handleAction = async (actionLabel: string, buttonId: string) => {
-        if (!currentLogbook) {
-            Alert.alert("No Vessel", "Please select a vessel in your profile first.");
-            return;
-        }
-
-        setLoadingButtonId(buttonId);
-
-        let lat = 0;
-        let lon = 0;
-
-        try {
-
-            // Set timeout for 10 seconds
-            const timeoutPromise = new Promise<{ coords: { latitude: number; longitude: number } }>((_, reject) =>
-                setTimeout(() => reject(new Error("Location timeout")), 10000)
-            );
-
-            const loc = await Promise.race([
-                getCurrentLocation(),
-                timeoutPromise
-            ]);
-
-            lat = loc.coords.latitude;
-            lon = loc.coords.longitude;
-
-        } catch (error: any) {
-            console.log("Location fetch failed or timed out. Saving with (0,0). Error:", error.message);
-            Alert.alert("Location Error", error.message || "Could not fetch location.");
-        }
-
-        addLogItemMutation.mutate({
-            logbookId: currentLogbook.id,
-            title: actionLabel,
-            lat: lat,
-            lon: lon,
-        }, {
-            onSuccess: () => {
-                Alert.alert("Success", "Event saved successfully");
-            },
-            onError: (error) => {
-                console.error(error);
-                Alert.alert("Error", "Failed to save log");
-            }
-        });
-    };
+    const { logAction, loadingButtonId } = useActionLogger();
 
     const renderButton = ({ item }: { item: { id: string, label: string } }) => {
         const isThisLoading = loadingButtonId === item.id;
@@ -72,7 +24,7 @@ export default function Home() {
             <Button
                 title={item.label}
                 shape="grid"
-                onPress={() => handleAction(item.label, item.id)}
+                onPress={() => logAction(item.label, item.id)}
                 loading={isThisLoading}
                 disabled={isDisabled}
                 style={{ width: '48%', aspectRatio: 2 }}

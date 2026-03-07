@@ -20,7 +20,6 @@ export default function EventList() {
     const { data: logs, isLoading } = useLogItems(currentLogbook?.id);
     const syncMutation = useSyncLogItems();
 
-    // Initialize our hook
     const { exportToCsv, isExporting } = useExportLogs();
 
     const [hasInitialFetchRun, setHasInitialFetchRun] = useState(false);
@@ -31,6 +30,7 @@ export default function EventList() {
             setHasInitialFetchRun(true);
         }
     }, [currentLogbook?.id, hasInitialFetchRun, syncMutation]);
+
 	// Show message if no vessel is selected
     if (!currentLogbook) {
         return (
