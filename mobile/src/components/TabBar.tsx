@@ -1,15 +1,15 @@
 import React, { useMemo } from "react";
-import { StyleSheet, TouchableOpacity, View, LayoutChangeEvent } from "react-native";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Text } from "@react-navigation/elements";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
-import {useOwnTheme} from "@/src/context/ThemeContext";
+import {useOwnTheme, Theme} from "@/src/context/ThemeContext";
 
 /**
  * TabBar Component
  *
- * We use BottomTabBarProps from @react-navigation/bottom-tabs to
+ * BottomTabBarProps from @react-navigation/bottom-tabs to
  * strictly type the state, descriptors, and navigation props.
  */
 export default function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
@@ -57,9 +57,7 @@ export default function TabBar({ state, descriptors, navigation }: BottomTabBarP
                   onPress={onPress}
                   style={styles.tabBarItem}
               >
-                {/* Render the icon based on the route name.
-              We default to a question mark if the route name is missing from our map
-             */}
+
                 {icons[route.name]
                     ? icons[route.name]({
                       color: isFocused ? theme.colors.textPrimary : theme.colors.textSecondary,
@@ -84,8 +82,7 @@ export default function TabBar({ state, descriptors, navigation }: BottomTabBarP
   );
 }
 
-// Ensure strict typing for the theme argument
-const createStyles = (theme: any) => // We will fix 'any' here in the next step when we fix global theme types
+const createStyles = (theme: Theme) =>
     StyleSheet.create({
       tabBar: {
         flexDirection: "row",
