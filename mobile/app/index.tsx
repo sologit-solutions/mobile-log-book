@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { StyleSheet, View, Text, Image, Alert, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Keyboard } from "react-native";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "expo-router";
 import { Screen } from "@/src/components/Screen";
@@ -17,6 +19,8 @@ const loginSchema = z.object({
 	password: z.string().min(1, "Password is required."),
 });
 
+type LoginFormData = z.infer<typeof loginSchema>;
+
 export default function LoginScreen() {
 	const router = useRouter();
 	const { theme } = useOwnTheme();
@@ -29,6 +33,15 @@ export default function LoginScreen() {
 
 	const [signupVisible, setSignupVisible] = useState(false);
 	const [forgotPassVisible, setForgotPassVisible] = useState(false);
+
+	const {
+		control,
+		handleSubmit,
+		formState: { errors }
+	} = useForm<LoginFormData>({
+		resolver: zodResolver(loginSchema),
+		defaultValues: { email: "", password: "" }
+	});
 
 	useEffect(() => {
 		const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
@@ -43,15 +56,10 @@ export default function LoginScreen() {
 		};
 	}, []);
 
-	const handleLogin = async () => {
-		const validationResult = loginSchema.safeParse({ email, password });
-		if (!validationResult.success) {
-			return Alert.alert("Validation Error", validationResult.error.issues[0].message);
-		}
-
+	const onSubmitLogin = async (data: LoginFormData) => {
 		setLoading(true);
 		try {
-			const authPayload = await loginUser(email, password);
+			const authPayload = await loginUser(data.email, data.password);
 			if (authPayload) {
 				login(authPayload.user, authPayload.token);
 				router.replace("/(tabs)/home");
@@ -109,9 +117,40 @@ export default function LoginScreen() {
 						</View>
 
 						<View style={styles.formContainer}>
-							<Input placeholder="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" style={styles.bigInput} />
-							<Input placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry style={styles.bigInput} />
-							<Button title="Sign in" onPress={handleLogin} loading={loading} style={{ marginTop: 10 }} />
+							<Controller
+								control={control}
+								name="email"
+								render={({ field: { onChange, onBlur, value } }) => (
+									<Input
+										placeholder="Email"
+										value={value}
+										onChangeText={onChange}
+										onBlur={onBlur}
+										autoCapitalize="none"
+										keyboardType="email-address"
+										style={styles.bigInput}
+										error={errors.email?.message}
+									/>
+								)}
+							/>
+
+							<Controller
+								control={control}
+								name="password"
+								render={({ field: { onChange, onBlur, value } }) => (
+									<Input
+										placeholder="Password"
+										value={value}
+										onChangeText={onChange}
+										onBlur={onBlur}
+										secureTextEntry
+										style={styles.bigInput}
+										error={errors.password?.message}
+									/>
+								)}
+							/>
+
+							<Button title="Sign in" onPress={handleSubmit(onSubmitLogin)} loading={loading} style={{ marginTop: 10 }} />
 
 							{!isKeyboardVisible && (
 								<TouchableOpacity style={styles.forgotPassLink} onPress={() => setForgotPassVisible(true)}>

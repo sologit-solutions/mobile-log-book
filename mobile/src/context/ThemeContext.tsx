@@ -1,8 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import { DARK_THEME, LIGHT_THEME } from "@/src/constants/Colors";
 
-// 1. Define the shape of your Theme object
-// We infer the type from your constant to ensure they match exactly
 type ThemeColors = typeof DARK_THEME;
 
 export interface Theme {
@@ -10,13 +8,11 @@ export interface Theme {
   isDark: boolean;
 }
 
-// 2. Define the Context definition
 interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
 }
 
-// 3. Create the context with undefined as initial state
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 /**

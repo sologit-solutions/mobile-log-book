@@ -122,17 +122,17 @@ export function useSyncLogItems() {
 		mutationFn: async (logbookId: string) => {
 			if (!userId) throw new Error("Authentication required for synchronization.");
 
-			// --- upload local edits ---
+			// upload local edits
 			const pendingItems = await LogItemRepository.getPendingLogItems(db, logbookId);
 			if (pendingItems.length > 0) {
 				await pushRemoteLogItems(logbookId, pendingItems);
 			}
 
-			// --- fetch remotes ---
+			// fetch remotes
 			const currentVersion = await LogItemRepository.getHighestLogItemVersion(db, logbookId);
 			const newItems = await fetchLatestRemoteLogItems(logbookId, currentVersion);
 
-			// --- apply to local db ---
+			// apply to local db
 			if (newItems?.length > 0) {
 				await LogItemRepository.mergeRemoteLogItems(db, logbookId, newItems);
 			}

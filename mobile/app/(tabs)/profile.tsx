@@ -42,7 +42,11 @@ export default function Profile() {
 	};
 
 	const handleAddVessel = (data: AddVesselFormData) => {
-		addVesselMutation.mutate(data, {
+		addVesselMutation.mutate({
+			name: data.name,
+			type: data.type || "",
+			registration: data.registration || ""
+		}, {
 			onSuccess: () => setAddVesselOpen(false),
 			onError: (error) => {
 				console.error("Failed to add vessel: ", error);
