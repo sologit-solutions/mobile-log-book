@@ -255,7 +255,6 @@ export default function EventDetail() {
 
             {!isKeyboardVisible && (
                 <View style={styles.stickyFooter}>
-                    {/* Trigger the wrapped submission handler */}
                     <Button title="Save Changes" onPress={handleSubmit(onSubmit)} loading={updateMutation.isPending} />
                 </View>
             )}

@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { Modal, KeyboardAvoidingView, ScrollView, Pressable, View, Text, StyleSheet, Platform, Keyboard, Alert } from "react-native";
+import React, { useEffect } from "react";
+import { Modal, KeyboardAvoidingView, ScrollView, Pressable, View, Text, StyleSheet, Platform, Keyboard } from "react-native";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Input } from "@/src/components/Input";
 import { Button } from "@/src/components/Button";
@@ -28,28 +30,28 @@ interface SignupModalProps {
 
 export const SignupModal: React.FC<SignupModalProps> = ({ visible, onClose, onSubmit, loading }) => {
     const { theme } = useOwnTheme();
-    const [signupData, setSignupData] = useState({ name: "", email: "", password: "", confirm: "" });
 
-    // Auto-reset form state when modal closes
+    const {
+        control,
+        handleSubmit,
+        reset,
+        formState: { errors }
+    } = useForm<SignupFormData>({
+        resolver: zodResolver(signupSchema),
+        defaultValues: {
+            name: "",
+            email: "",
+            password: "",
+            confirm: ""
+        }
+    });
+
+    // Cleanup memory when modal closes
     useEffect(() => {
         if (!visible) {
-            setSignupData({ name: "", email: "", password: "", confirm: "" });
+            reset({ name: "", email: "", password: "", confirm: "" });
         }
-    }, [visible]);
-
-    const handleSubmit = () => {
-        if (!signupData.name || !signupData.email || !signupData.password) return Alert.alert("Error", "Fill all fields");
-
-        const validationResult = signupSchema.safeParse(signupData);
-
-        if (!validationResult.success) {
-            const firstError = validationResult.error.issues[0].message;
-            return Alert.alert("Validation Error", firstError);
-        }
-
-        // Pass the validated data back to the parent controller
-        onSubmit(signupData);
-    };
+    }, [visible, reset]);
 
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -59,37 +61,72 @@ export const SignupModal: React.FC<SignupModalProps> = ({ visible, onClose, onSu
                         <View style={[styles.modalContent, { backgroundColor: theme.colors.background, borderColor: theme.colors.surface }]}>
                             <Text style={[styles.modalTitle, { color: theme.colors.textPrimary }]}>Create Account</Text>
 
-                            <Input
-                                placeholder="Name"
-                                value={signupData.name}
-                                onChangeText={(t) => setSignupData({ ...signupData, name: t })}
-                                style={styles.bigInput}
+                            <Controller
+                                control={control}
+                                name="name"
+                                render={({ field: { onChange, onBlur, value } }) => (
+                                    <Input
+                                        placeholder="Name"
+                                        value={value}
+                                        onChangeText={onChange}
+                                        onBlur={onBlur}
+                                        style={styles.bigInput}
+                                        error={errors.name?.message}
+                                    />
+                                )}
                             />
-                            <Input
-                                placeholder="Email"
-                                value={signupData.email}
-                                onChangeText={(t) => setSignupData({ ...signupData, email: t })}
-                                autoCapitalize="none"
-                                style={styles.bigInput}
+
+                            <Controller
+                                control={control}
+                                name="email"
+                                render={({ field: { onChange, onBlur, value } }) => (
+                                    <Input
+                                        placeholder="Email"
+                                        value={value}
+                                        onChangeText={onChange}
+                                        onBlur={onBlur}
+                                        autoCapitalize="none"
+                                        style={styles.bigInput}
+                                        error={errors.email?.message}
+                                    />
+                                )}
                             />
-                            <Input
-                                placeholder="Password"
-                                value={signupData.password}
-                                onChangeText={(t) => setSignupData({ ...signupData, password: t })}
-                                secureTextEntry
-                                style={styles.bigInput}
+
+                            <Controller
+                                control={control}
+                                name="password"
+                                render={({ field: { onChange, onBlur, value } }) => (
+                                    <Input
+                                        placeholder="Password"
+                                        value={value}
+                                        onChangeText={onChange}
+                                        onBlur={onBlur}
+                                        secureTextEntry
+                                        style={styles.bigInput}
+                                        error={errors.password?.message}
+                                    />
+                                )}
                             />
-                            <Input
-                                placeholder="Confirm Password"
-                                value={signupData.confirm}
-                                onChangeText={(t) => setSignupData({ ...signupData, confirm: t })}
-                                secureTextEntry
-                                style={styles.bigInput}
+
+                            <Controller
+                                control={control}
+                                name="confirm"
+                                render={({ field: { onChange, onBlur, value } }) => (
+                                    <Input
+                                        placeholder="Confirm Password"
+                                        value={value}
+                                        onChangeText={onChange}
+                                        onBlur={onBlur}
+                                        secureTextEntry
+                                        style={styles.bigInput}
+                                        error={errors.confirm?.message}
+                                    />
+                                )}
                             />
 
                             <View style={styles.modalActions}>
                                 <Button title="Cancel" variant="outline" shape="grid" onPress={onClose} style={{ flex: 1, height: 55, marginRight: 10 }} />
-                                <Button title="Sign Up" shape="grid" onPress={handleSubmit} loading={loading} style={{ flex: 1, height: 55, marginLeft: 10 }} />
+                                <Button title="Sign Up" shape="grid" onPress={handleSubmit(onSubmit)} loading={loading} style={{ flex: 1, height: 55, marginLeft: 10 }} />
                             </View>
                         </View>
                     </Pressable>

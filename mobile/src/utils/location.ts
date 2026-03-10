@@ -8,7 +8,7 @@ interface LocationOptions {
 /**
  * Requests permission and retrieves the current device location.
  * Throws an error if permission is denied or services are disabled.
- * * @param options - Optional configuration (default: Balanced Accuracy)
+ * @param options - Optional configuration (default: Balanced Accuracy)
  * @returns Promise<Location.LocationObject>
  */
 export const getCurrentLocation = async (options: LocationOptions = {}): Promise<Location.LocationObject> => {

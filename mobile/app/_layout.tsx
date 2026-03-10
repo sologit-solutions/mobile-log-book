@@ -29,9 +29,7 @@ function RootLayoutContent() {
 
 export default function RootLayout() {
     return (
-        // 1. Wrap with QueryClientProvider
         <QueryClientProvider client={queryClient}>
-            {/* 2. Removed AppStateProvider (replaced by Zustand) */}
             <ThemeProvider>
                 <SQLiteProvider databaseName={"logs.db"} onInit={MigrationService.migrateDbIfNeeded}>
                     <RootLayoutContent />
