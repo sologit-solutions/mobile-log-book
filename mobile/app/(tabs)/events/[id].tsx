@@ -1,12 +1,31 @@
-import React, { useState, useEffect, useRef } from "react";
-import { View, Text, StyleSheet, Alert, Platform, TouchableOpacity, ScrollView, KeyboardAvoidingView, Keyboard } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { View, Text, StyleSheet, Alert, Platform, ScrollView, KeyboardAvoidingView, Keyboard } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
 import { Screen } from "@/src/components/Screen";
 import { Button } from "@/src/components/Button";
 import { Input } from "@/src/components/Input";
 import { useOwnTheme } from "@/src/context/ThemeContext";
 import { useLogItem, useUpdateLogItem, useDeleteLogItem } from "@/src/features/logbook/hooks";
 import { useLogbookStore } from "@/src/store/logbookStore";
+
+/**
+ * Zod schema for validating event edits before they hit the mutation layer
+ * z.coerce.number to automatically transform the raw string inputs from the UI into numbers
+ * If input is empty or invalid, it catches the NaN and passes the custom message to the UI
+ */
+const eventSchema = z.object({
+    title: z.string().min(1, "Activity title is required."),
+    body: z.string().nullable().optional(),
+    lat: z.coerce.number({ message: "Must be a valid number." }),
+    lon: z.coerce.number({ message: "Must be a valid number." }),
+});
+
+// Extract the TS type directly from the schema definition
+type EventDTO = z.infer<typeof eventSchema>;
 
 export default function EventDetail() {
     const { id } = useLocalSearchParams();
@@ -21,12 +40,29 @@ export default function EventDetail() {
     const updateMutation = useUpdateLogItem();
     const deleteMutation = useDeleteLogItem();
 
-    // Form State
-    const [titleText, setTitleText] = useState("");
-    const [bodyText, setBodyText] = useState("");
-    const [latStr, setLatStr] = useState("");
-    const [lonStr, setLonStr] = useState("");
+    /**
+     * Initialize the form controller with the Zod resolver
+     * Pass 3 generic type arguments to explicitly tell TS how to handle the data transformation
+     * 1st Generic: The relaxed input type where lat and lon are treated as unknown due to the coerce function
+     * 2nd Generic: Form context which we do not use here
+     * 3rd Generic: The final strict EventDTO output type that our onSubmit function expects
+     */
+    const {
+        control,
+        handleSubmit,
+        reset,
+        formState: { errors }
+    } = useForm<z.input<typeof eventSchema>, any, EventDTO>({
+        resolver: zodResolver(eventSchema),
+        defaultValues: {
+            title: "",
+            body: "",
+            lat: 0,
+            lon: 0
+        }
+    });
 
+    // Keyboard + scroll State
     const scrollViewRef = useRef<ScrollView>(null);
     const [isKeyboardVisible, setKeyboardVisible] = useState(false);
     const [isBodyFocused, setIsBodyFocused] = useState(false);
@@ -46,45 +82,38 @@ export default function EventDetail() {
 
     useEffect(() => {
         if (isKeyboardVisible && isBodyFocused) {
-            // A tiny 100ms delay ensures the 20px spacer has finished rendering
             setTimeout(() => {
                 scrollViewRef.current?.scrollToEnd({ animated: true });
             }, 100);
         }
     }, [isKeyboardVisible, isBodyFocused]);
 
-    // Sync state when data loads
+    // Hydrate the form from the db query
     useEffect(() => {
         if (log) {
-            setTitleText(log.title);
-            setBodyText(log.body || "");
-            setLatStr(String(log.latitude));
-            setLonStr(String(log.longitude));
+            reset({
+                title: log.title,
+                body: log.body || "",
+                lat: log.latitude,
+                lon: log.longitude
+            });
         }
-    }, [log]);
+    }, [log, reset]);
 
-    const handleUpdate = () => {
+    // This function fires if Zod validation passes
+    const onSubmit = (data: EventDTO) => {
         if (!logId || !currentLogbook?.id) {
             Alert.alert("Error", "Missing log or vessel info");
-            return;
-        }
-
-        // Validate & Parse Location
-        const newLat = parseFloat(latStr);
-        const newLon = parseFloat(lonStr);
-
-        if (isNaN(newLat) || isNaN(newLon)) {
-            Alert.alert("Invalid Location", "Latitude and Longitude must be numbers.");
             return;
         }
 
         updateMutation.mutate(
             {
                 id: logId,
-                title: titleText,
-                body: bodyText.trim() === "" ? null : bodyText,
-                lat: newLat,
-                lon: newLon,
+                title: data.title,
+                body: data.body?.trim() === "" ? null : data.body,
+                lat: data.lat,
+                lon: data.lon,
                 logbookId: currentLogbook.id
             },
             {
@@ -107,7 +136,7 @@ export default function EventDetail() {
                 text: "Delete",
                 style: "destructive",
                 onPress: () => {
-                    deleteMutation.mutate({id: logId, logbookId: currentLogbook.id}, {
+                    deleteMutation.mutate({ id: logId, logbookId: currentLogbook.id }, {
                         onSuccess: () => router.back()
                     });
                 }
@@ -126,28 +155,13 @@ export default function EventDetail() {
     return (
         <Screen style={{ flex: 1 }}>
 
-            {/* --- TOP LEFT BACK BUTTON --- */}
-            <TouchableOpacity
-                onPress={() => router.back()}
-                style={[styles.headerBtn, styles.headerBackBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.textSecondary, borderWidth: 1 }]}
-            >
-                <Text style={{ color: theme.colors.textPrimary, fontWeight: '600', fontSize: 14 }}>Back</Text>
-            </TouchableOpacity>
+            <Button title="Back" variant="outline" shape="pill" onPress={() => router.back()} style={styles.headerBackBtn} />
+            <Button title="Delete" variant="danger" shape="pill" onPress={handleDelete} style={styles.headerDeleteBtn} />
 
-            {/* --- TOP RIGHT DELETE BUTTON --- */}
-            <TouchableOpacity
-                onPress={handleDelete}
-                style={[styles.headerBtn, styles.headerDeleteBtn, { backgroundColor: theme.colors.danger }]}
-            >
-                <Text style={styles.btnTextWhite}>Delete</Text>
-            </TouchableOpacity>
-
-            {/* Header Title (Fixed at top) */}
             <View style={styles.header}>
                 <Text style={[styles.title, { color: theme.colors.textPrimary }]}>Edit Event</Text>
             </View>
 
-            {/* --- SCROLLABLE CONTENT --- */}
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 style={{ flex: 1 }}
@@ -159,69 +173,89 @@ export default function EventDetail() {
                     keyboardShouldPersistTaps="handled"
                     automaticallyAdjustKeyboardInsets={true}
                 >
-                    {/* Logbook Name (Read Only) */}
                     <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Vessel</Text>
                     <View style={[styles.readOnlyField, { backgroundColor: theme.colors.surface, borderColor: theme.colors.surface }]}>
                         <Text style={{ color: theme.colors.textPrimary, fontSize: 16 }}>{currentLogbook?.name || "Unknown Logbook"}</Text>
                     </View>
 
-                    {/* Timestamp (Read Only) */}
                     <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Event Time</Text>
                     <View style={[styles.readOnlyField, { backgroundColor: theme.colors.surface, borderColor: theme.colors.surface }]}>
                         <Text style={{ color: theme.colors.textPrimary, fontSize: 16 }}>{new Date(log.created_at).toLocaleString()}</Text>
                     </View>
 
-                    {/* Lat & Lon Row */}
                     <View style={styles.row}>
                         <View style={{ flex: 1, marginRight: 10 }}>
-                            <Input
-                                label="Latitude"
-                                value={latStr}
-                                onChangeText={setLatStr}
-                                keyboardType="numeric"
+                            <Controller
+                                control={control}
+                                name="lat"
+                                render={({ field: { onChange, onBlur, value } }) => (
+                                    <Input
+                                        label="Latitude"
+                                        value={String(value)}
+                                        onChangeText={onChange}
+                                        onBlur={onBlur}
+                                        keyboardType="numeric"
+                                        error={errors.lat?.message}
+                                    />
+                                )}
                             />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Input
-                                label="Longitude"
-                                value={lonStr}
-                                onChangeText={setLonStr}
-                                keyboardType="numeric"
+                            <Controller
+                                control={control}
+                                name="lon"
+                                render={({ field: { onChange, onBlur, value } }) => (
+                                    <Input
+                                        label="Longitude"
+                                        value={String(value)}
+                                        onChangeText={onChange}
+                                        onBlur={onBlur}
+                                        keyboardType="numeric"
+                                        error={errors.lon?.message}
+                                    />
+                                )}
                             />
                         </View>
                     </View>
 
-                    <Input
-                        label="Activity Title"
-                        value={titleText}
-                        onChangeText={setTitleText}
-                        style={{ height: 55 }}
+                    <Controller
+                        control={control}
+                        name="title"
+                        render={({ field: { onChange, onBlur, value } }) => (
+                            <Input
+                                label="Activity Title"
+                                value={value}
+                                onChangeText={onChange}
+                                onBlur={onBlur}
+                                error={errors.title?.message}
+                            />
+                        )}
                     />
 
-                    {/* Optional Body Input */}
-                    <Input
-                        label="Detailed Log (Optional)"
-                        value={bodyText}
-                        onChangeText={setBodyText}
-                        multiline
-                        style={{ height: 120, textAlignVertical: 'top' }}
-                        onFocus={() => setIsBodyFocused(true)}
-                        onBlur={() => setIsBodyFocused(false)}
+                    <Controller
+                        control={control}
+                        name="body"
+                        render={({ field: { onChange, onBlur, value } }) => (
+                            <Input
+                                label="Detailed Log (Optional)"
+                                value={value || ""}
+                                onChangeText={onChange}
+                                onBlur={onBlur}
+                                multiline
+                                style={{ height: 120, textAlignVertical: 'top' }}
+                                onFocus={() => setIsBodyFocused(true)}
+                                error={errors.body?.message}
+                            />
+                        )}
                     />
 
                     <View style={{ height: isKeyboardVisible ? 20 : 160 }} />
                 </ScrollView>
             </KeyboardAvoidingView>
 
-            {/* --- STICKY BOTTOM BUTTON --- */}
             {!isKeyboardVisible && (
                 <View style={styles.stickyFooter}>
-                    <Button
-                        title="Save Changes"
-                        onPress={handleUpdate}
-                        loading={updateMutation.isPending}
-                        style={styles.saveBtn}
-                    />
+                    <Button title="Save Changes" onPress={handleSubmit(onSubmit)} loading={updateMutation.isPending} />
                 </View>
             )}
         </Screen>
@@ -229,29 +263,17 @@ export default function EventDetail() {
 }
 
 const styles = StyleSheet.create({
-    headerBtn: {
+    headerBackBtn: {
         position: 'absolute',
         top: 0,
-        paddingVertical: 8,
-        paddingHorizontal: 15,
-        borderRadius: 20,
-        zIndex: 10,
-        elevation: 3,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-    },
-    headerBackBtn: {
         left: 15,
+        zIndex: 10
     },
     headerDeleteBtn: {
+        position: 'absolute',
+        top: 0,
         right: 15,
-    },
-    btnTextWhite: {
-        color: 'white',
-        fontWeight: '600',
-        fontSize: 14,
+        zIndex: 10
     },
     header: {
         alignItems: 'center',
@@ -268,9 +290,6 @@ const styles = StyleSheet.create({
     scrollContent: {
         paddingHorizontal: 20,
         paddingTop: 10,
-    },
-    bottomSpacer: {
-        height: 160,
     },
     sectionLabel: {
         fontSize: 14,
@@ -293,15 +312,5 @@ const styles = StyleSheet.create({
         left: 20,
         right: 20,
         zIndex: 20,
-    },
-    saveBtn: {
-        height: 55,
-        width: '100%',
-        justifyContent: 'center',
-        elevation: 5,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4.65,
     }
 });

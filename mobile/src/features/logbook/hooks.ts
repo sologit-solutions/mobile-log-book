@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSQLiteContext } from "expo-sqlite";
-import { getLogItems, addLogItem, deleteLogItem, updateLogItem, getLogItemById, getPendingLogItems, getHighestLogItemVersion, mergeRemoteLogItems } from "@/src/database/db";
+import { LogItemRepository } from '@/src/database/repositories/LogItemRepository';
 import { pushRemoteLogItems, deleteRemoteLogItems, updateRemoteLogItems, fetchLatestRemoteLogItems } from "@/src/utils/api";
 import { useAuthStore } from "@/src/store/authStore";
 
@@ -14,7 +14,7 @@ export function useLogItems(logbookId?: string | null) {
 	const db = useSQLiteContext();
 	return useQuery({
 		queryKey: LOG_ITEM_KEYS.list(logbookId),
-		queryFn: () => getLogItems(db, logbookId || undefined),
+		queryFn: () => LogItemRepository.getLogItems(db, logbookId || undefined),
 	});
 }
 
@@ -22,7 +22,7 @@ export function useLogItem(id: string) {
 	const db = useSQLiteContext();
 	return useQuery({
 		queryKey: LOG_ITEM_KEYS.detail(id),
-		queryFn: () => getLogItemById(db, id),
+		queryFn: () => LogItemRepository.getLogItemById(db, id),
 		enabled: !!id, // Only run if ID exists
 	});
 }
@@ -34,10 +34,10 @@ export function useAddLogItem() {
 
 	return useMutation({
 		mutationFn: async (data: { title: string; body?: string | null; lat: number; lon: number; logbookId: string }) => {
-			const localId = await addLogItem(db, data.logbookId, data.title, data.body || null, data.lat, data.lon);
+			const localId = await LogItemRepository.addLogItem(db, data.logbookId, data.title, data.body || null, data.lat, data.lon);
 
 			if (user?.id) {
-				const newItem = await getLogItemById(db, localId);
+				const newItem = await LogItemRepository.getLogItemById(db, localId);
 				if (newItem) {
 					pushRemoteLogItems(data.logbookId, [newItem])
 						.then((res) => console.log(`Server saved ${res.count} items.`))
@@ -63,10 +63,10 @@ export function useUpdateLogItem() {
 
 	return useMutation({
 		mutationFn: async (data: { id: string; title: string; body?: string | null; lat?: number; lon?: number; logbookId: string }) => {
-			await updateLogItem(db, data.id, data.title, data.body || null, data.lat, data.lon);
+			await LogItemRepository.updateLogItem(db, data.id, data.title, data.body || null, data.lat, data.lon);
 
 			if (user?.id) {
-				const updatedItem = await getLogItemById(db, data.id);
+				const updatedItem = await LogItemRepository.getLogItemById(db, data.id);
 				if (updatedItem) {
 					updateRemoteLogItems(data.logbookId, [updatedItem])
 						.then(() => console.log("Success! Edit uploaded to server."))
@@ -92,7 +92,7 @@ export function useDeleteLogItem() {
 
 	return useMutation({
 		mutationFn: async (data: {id: string, logbookId: string}) => {
-			await deleteLogItem(db, data.id);
+			await LogItemRepository.deleteLogItem(db, data.id);
 
 			// If logged in, tell the server to delete it
 			if (user?.id) {
@@ -122,19 +122,19 @@ export function useSyncLogItems() {
 		mutationFn: async (logbookId: string) => {
 			if (!userId) throw new Error("Authentication required for synchronization.");
 
-			// --- upload local edits ---
-			const pendingItems = await getPendingLogItems(db, logbookId);
+			// upload local edits
+			const pendingItems = await LogItemRepository.getPendingLogItems(db, logbookId);
 			if (pendingItems.length > 0) {
 				await pushRemoteLogItems(logbookId, pendingItems);
 			}
 
-			// --- fetch remotes ---
-			const currentVersion = await getHighestLogItemVersion(db, logbookId);
+			// fetch remotes
+			const currentVersion = await LogItemRepository.getHighestLogItemVersion(db, logbookId);
 			const newItems = await fetchLatestRemoteLogItems(logbookId, currentVersion);
 
-			// --- apply to local db ---
+			// apply to local db
 			if (newItems?.length > 0) {
-				await mergeRemoteLogItems(db, logbookId, newItems);
+				await LogItemRepository.mergeRemoteLogItems(db, logbookId, newItems);
 			}
 
 			return true;

@@ -1,9 +1,6 @@
-import React, {useEffect, useState} from "react";
-import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, Alert, Platform, RefreshControl } from "react-native";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, Text, View, FlatList, ActivityIndicator, RefreshControl } from "react-native";
 import { useRouter } from "expo-router";
-
-import { File, Paths, Directory } from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
 
 import { Screen } from "@/src/components/Screen";
 import { Card } from "@/src/components/Card";
@@ -13,21 +10,20 @@ import { useLogbookStore } from "@/src/store/logbookStore";
 import { DBLogItem } from "@/src/types/db";
 import { Button } from "@/src/components/Button";
 
+import { useExportLogs } from "@/src/features/logbook/useExportLogs";
+
 export default function EventList() {
     const { theme } = useOwnTheme();
     const router = useRouter();
-	const { currentLogbook } = useLogbookStore();
+    const { currentLogbook } = useLogbookStore();
 
-    // React Query handles loading/error/data automatically
     const { data: logs, isLoading } = useLogItems(currentLogbook?.id);
-
-    // initialise sync engine
     const syncMutation = useSyncLogItems();
 
-    // state to prevent infinite autofetching
+    const { exportToCsv, isExporting } = useExportLogs();
+
     const [hasInitialFetchRun, setHasInitialFetchRun] = useState(false);
 
-    // Automatic fetch
     useEffect(() => {
         if (currentLogbook?.id && !hasInitialFetchRun) {
             syncMutation.mutate(currentLogbook.id);
@@ -35,78 +31,19 @@ export default function EventList() {
         }
     }, [currentLogbook?.id, hasInitialFetchRun, syncMutation]);
 
-const handleExport = async () => {
-        if (!logs || logs.length === 0) {
-            Alert.alert("No Data", "There are no events to export.");
-            return;
-        }
-
-        try {
-            let csvContent = "Date,Time,Event,Details,Latitude,Longitude\n";
-
-            logs.forEach((log) => {
-                const dateObj = new Date(log.created_at);
-
-                const year = dateObj.getFullYear();
-                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-                const day = String(dateObj.getDate()).padStart(2, '0');
-
-                const dateStr = `${year}-${month}-${day}`;
-
-                const timeStr = dateObj.toTimeString().slice(0, 5);
-
-				const cleanTitle = log.title.replace(/,/g, " ");
-                const cleanBody = log.body ? log.body.replace(/,/g, " ") : "";
-
-                csvContent += `${dateStr},${timeStr},${cleanTitle},${cleanBody},${log.latitude},${log.longitude}\n`;
-            });
-
-            const safeName = currentLogbook?.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() || "logs";
-
-            if (Platform.OS === 'android') {
-                const directory = await Directory.pickDirectoryAsync();
-
-                if (directory) {
-                    const file = directory.createFile(`${safeName}_export`, 'text/csv');
-                    file.write(csvContent);
-
-                    Alert.alert("Success", "Logbook successfully saved to your device.");
-                }
-
-            } else {
-                const file = new File(Paths.document, `${safeName}_export.csv`);
-
-                if (!file.exists) {
-                    file.create();
-                }
-                file.write(csvContent);
-
-                if (await Sharing.isAvailableAsync()) {
-                    await Sharing.shareAsync(file.uri, {
-                        mimeType: 'text/csv',
-                        dialogTitle: `Export Logs for ${currentLogbook?.name}`
-                    });
-                } else {
-                    Alert.alert("Error", "File sharing is disabled or unavailable on this device.");
-                }
-            }
-
-        } catch (error: any) {
-            console.error("Export pipeline failed:", error);
-            Alert.alert("Export Error", "A system error occurred while generating or saving the CSV.");
-        }
-    };
-
 	// Show message if no vessel is selected
-	if (!currentLogbook) {
+    if (!currentLogbook) {
         return (
-            <Screen style={styles.centerContainer}>
-                <Text style={[styles.emptyText, { color: theme.colors.textPrimary }]}>
-                    No Vessel Selected
-                </Text>
-                <Text style={{ color: theme.colors.textSecondary, textAlign: 'center', marginBottom: 20 }}>
-                    Please select a vessel to view its logbook.
-                </Text>
+            <Screen style={{ flex: 1, padding: 20 }}>
+                <View style={{ alignItems: 'center', marginTop: 60, marginBottom: 30 }}>
+                    <Text style={[styles.emptyText, { color: theme.colors.textPrimary }]}>
+                        No Vessel Selected
+                    </Text>
+                    <Text style={{ color: theme.colors.textSecondary, textAlign: 'center' }}>
+                        Please select a vessel to view its logbook.
+                    </Text>
+                </View>
+
                 <Button
                     title="Go to Profile"
                     onPress={() => router.navigate("/(tabs)/profile")}
@@ -115,7 +52,7 @@ const handleExport = async () => {
         );
     }
 
-const renderItem = ({ item }: { item: DBLogItem }) => (
+    const renderItem = ({ item }: { item: DBLogItem }) => (
         <Card
             onPress={() => router.push(`/events/${item.id}`)}
             style={styles.card}
@@ -139,7 +76,7 @@ const renderItem = ({ item }: { item: DBLogItem }) => (
         </Card>
     );
 
-return (
+    return (
         <Screen style={{ flex: 1 }}>
             <View style={styles.topBar}>
                 <Text
@@ -149,21 +86,13 @@ return (
                     ⛵ {currentLogbook.name}
                 </Text>
 
-                <TouchableOpacity
-                    onPress={handleExport}
-                    style={[
-                        styles.exportBtn,
-                        {
-                            backgroundColor: theme.colors.surface,
-                            borderColor: theme.colors.textSecondary,
-                            borderWidth: 1
-                        }
-                    ]}
-                >
-                    <Text style={{ color: theme.colors.textPrimary, fontWeight: '600', fontSize: 14 }}>
-                        Export CSV
-                    </Text>
-                </TouchableOpacity>
+                <Button
+                    title="Export CSV"
+                    variant="outline"
+                    shape="pill"
+                    onPress={() => exportToCsv(logs, currentLogbook.name)}
+                    loading={isExporting}
+                />
             </View>
 
             <View style={{ flex: 1 }}>
@@ -203,7 +132,7 @@ return (
 }
 
 const styles = StyleSheet.create({
-	topBar: {
+    topBar: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -217,21 +146,10 @@ const styles = StyleSheet.create({
         flex: 1,
         marginRight: 10,
     },
-    exportBtn: {
-        paddingVertical: 8,
-        paddingHorizontal: 15,
-        borderRadius: 20,
-        elevation: 3,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-    },
     centerContainer: {
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        //marginTop: 50,
     },
     listContent: {
         padding: 16,
@@ -250,7 +168,7 @@ const styles = StyleSheet.create({
         fontWeight: "600",
         marginBottom: 8,
     },
-	emptyText: {
+    emptyText: {
         fontSize: 20,
         fontWeight: "bold",
         marginBottom: 10,
