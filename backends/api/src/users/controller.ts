@@ -136,14 +136,4 @@ router.post("/refresh", requireAuth, async (req, res) => {
   return res.status(501);
 });
 
-// Request password reset
-router.post("/password-reset", async (req, res) => {
-  return res.status(501);
-});
-
-// Submit password reset
-router.put("/password-reset", async (req, res) => {
-  return res.status(501);
-});
-
 export default router;

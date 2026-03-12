@@ -2,7 +2,11 @@ import { prisma } from "../configs/db.ts";
 import type { User } from "../types/user.ts";
 import type { Result } from "../types/result.ts";
 
-export const createUser = async (
+
+/**
+ * Creates a user in the database
+ */
+const createUser = async (
   user: Pick<User, "username" | "email" | "hash">,
 ): Promise<Result<User>> => {
   const result = await prisma.user.create({
@@ -12,7 +16,10 @@ export const createUser = async (
   return { success: true, data: result };
 };
 
-export const getUserByEmail = async (
+/**
+ * 
+ */
+const getUserByEmail = async (
   user: Partial<Pick<User, "username" | "email">>,
 ): Promise<Result<User>> => {
   const result = await prisma.user.findFirstOrThrow({
@@ -22,7 +29,11 @@ export const getUserByEmail = async (
   return { success: true, data: result };
 };
 
-export const getUserByUsername = async (
+/**
+ *
+ *
+ */
+const getUserByUsername = async (
   user: Partial<Pick<User, "username" | "email">>,
 ): Promise<Result<User>> => {
   const result = await prisma.user.findFirstOrThrow({
@@ -32,7 +43,11 @@ export const getUserByUsername = async (
   return { success: true, data: result };
 };
 
-export const SetUserPassword = async (
+/**
+ *
+ *
+ */
+const setUserPassword = async (
   userId: string,
   newHash: string,
 ): Promise<Result<User>> => {
@@ -43,3 +58,5 @@ export const SetUserPassword = async (
 
   return { success: true, data: result };
 };
+
+export { createUser, getUserByEmail, getUserByUsername, setUserPassword };
