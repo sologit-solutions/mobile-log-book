@@ -31,3 +31,15 @@ export const getUserByUsername = async (
 
   return { success: true, data: result };
 };
+
+export const SetUserPassword = async (
+  userId: string,
+  newHash: string,
+): Promise<Result<User>> => {
+  const result = await prisma.user.update({
+    where: { id: userId },
+    data: { hash: newHash },
+  });
+
+  return { success: true, data: result };
+};

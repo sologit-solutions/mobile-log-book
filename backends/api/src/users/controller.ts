@@ -4,6 +4,8 @@ import signupValidator from "./validators/signupValidator.ts";
 import loginValidator from "./validators/loginValidator.ts";
 import handleRequest from "../utils/requestUtils.ts";
 import requireAuth from "../middleware/requireAuth.ts";
+import recoveryValidator from "./validators/recoveryValidator.ts";
+import newPasswordValidator from "./validators/newPasswordValidator.ts";
 
 const router = Router();
 
@@ -57,6 +59,44 @@ router.post("/login", async (req, res) => {
     input: req.body,
     validator: loginValidator,
     fun: service.authenticate,
+  };
+
+  // Call handler
+  return await handleRequest(context);
+});
+
+/**
+ * Route: /users/password-reset
+ *
+ * The route expects the server to send a password reset email to the user with a link to a password reset page.
+ * The link contains a token that is used to verify the user's identity and the validity of the request.
+ *
+ * body: {
+ *   email: string,
+ * }
+ *
+ *
+ */
+router.post("/password-reset", async (req, res) => {
+  // Define context
+  const context = {
+    res,
+    input: req.body,
+    validator: recoveryValidator,
+    fun: service.sendRecoveryEmail,
+  };
+
+  // Call handler
+  return await handleRequest(context);
+});
+
+router.put("/password-reset", async (req, res) => {
+  // Define context
+  const context = {
+    res,
+    input: req.body,
+    validator: newPasswordValidator,
+    fun: service.resetPassword,
   };
 
   // Call handler
