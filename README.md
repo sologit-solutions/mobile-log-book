@@ -1,8 +1,27 @@
 # Logbook alternative for sailors and boaters
 
-[Docker](https://www.docker.com/) is required to run this project.
+### Requirements:
+#### Backend:
+Access to a bash-like terminal environment:
+Windows users:
+[Windows Subsystem for Linux](https://learn.microsoft.com/en-us/windows/wsl/install)
+[Git for Windows](https://gitforwindows.org/)
 
-#### Setting up the development environment
+[Docker](https://docs.docker.com/get-started/get-docker/) is required for running the development environment.
+
+#### Mobile app:
+Install node.js on your computer:
+[Node 22.x LTS](https://nodejs.org/en/download)
+
+##### Expo Go (Recommended, Easy)
+[Google Play](https://play.google.com/store/apps/details?id=host.exp.exponent)
+[App Store](https://apps.apple.com/us/app/expo-go/id982107779)
+
+##### Emulators
+[Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
+[iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
+
+#### Setting up backend development environment
 
 ##### 1. Clone this repository
 
@@ -62,7 +81,7 @@ run-dev
 The development environment has hot-reloading enabled to make development easier
 without having to restart the container.
 
-#### Other commands:
+##### Other commands:
 
 Stop and remove development containers
 
@@ -81,3 +100,47 @@ Run production configuration
 ```
 run-prod
 ```
+
+#### Setting up mobile app
+
+##### Navigate to the `/mobile` directory in terminal
+
+##### Install dependencies
+
+```
+npm install
+```
+
+##### (Optional) Configure .env to use the live api
+in  the `/mobile` directory create a .env file with the following contents 
+
+```
+EXPO_PUBLIC_API_URL=https://api.sologit.com
+```
+
+##### Start expo
+
+```
+npx expo start
+```
+
+##### Using Expo Go mobile app
+N.B. For this to work your phone and computer need to be on the same network.
+Scan the QR code in the terminal to use bundle the app to your phone.
+
+![Expo Go QR Code](other/qr.png)
+
+##### Using Android Emulator
+[Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
+
+1. Download and install the emulator.
+
+2. When Android Studio is launched on the "Welcome to android studio" screen select More Actions.
+
+3. Select Virtual Device Manager
+
+4. Select the "+" sign in the Device Manager to create a new device.
+
+5. Start the device emulator.
+
+6. Choose `› Press a │ open Android` option in terminal with expo running to launch the app in the emulator.
